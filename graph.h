@@ -14,6 +14,7 @@ private:
 public:
     Node* get_input_node(void);
     Node* get_output_node(void);
+    void clear_gradients(void);
     void add_node(Node *n);
     void connect_to(int a, int b);
     void connect_to(Node *a, Node *b);

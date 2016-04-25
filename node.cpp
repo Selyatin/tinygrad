@@ -12,7 +12,7 @@ unsigned int Node::count_inputs(void) {
 void Node::calculate_value(void){
 }
 
-void Node::calculate_gradient(void){
+void Node::calculate_gradient(bool last){
 }
 
 void Node::connect_to(Node *target){
@@ -24,4 +24,5 @@ Node::Node() {
     this->grad.clear();
     this->buffer.clear();
     this->output.clear();
+    this->grad_type = 0;
 }

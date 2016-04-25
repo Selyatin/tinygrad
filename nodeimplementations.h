@@ -16,27 +16,27 @@ private:
     double addition;
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
     NodeElementWiseAddConstant(double);
 };
 
 class NodeSumAllTensorElements : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
 };
 
 class NodeTransposeMatrix : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
 };
 
 class NodeMultiplyRightWithMatrix : public Node{
 public:
     Tensor *mulmat;
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
     void update_matrix(Tensor *);
     NodeMultiplyRightWithMatrix(Tensor*);
 };
@@ -46,26 +46,26 @@ private:
     double power;
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
     NodeElementWisePower(double);
 };
 
 class NodeElementWiseSigmoidFunction : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
 };
 
 class NodeElementWiseLog : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
 };
 
 class NodeIdentity : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
 };
 
 class NodeElementWiseConstantMultiply : public Node{
@@ -73,7 +73,7 @@ private:
     double multiple;
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
     NodeElementWiseConstantMultiply(double);
 };
 
@@ -82,9 +82,19 @@ private:
     double target;
 public:
     void calculate_value(void);
-    void calculate_gradient(void);
+    void calculate_gradient(bool last);
     void update_target(double);
     NodeSingleSquaredError(double);
+};
+
+class NodeSingleBinaryCrossEntropy : public Node{
+private:
+    double target;
+public:
+    void calculate_value(void);
+    void calculate_gradient(bool last);
+    void update_target(double);
+    NodeSingleBinaryCrossEntropy(double);
 };
 
 #endif //TINYGRAD_NODEIMPLEMENTATIONS_H

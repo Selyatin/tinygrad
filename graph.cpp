@@ -14,21 +14,46 @@ void Graph::print_contents(void) {
     std::cout << "--- Nodes, buffers and outputs ---" << std::endl;
     for(int i=0; i<this->nodes.size(); i++) {
         Node *c = this->nodes[i];
+        std::cout << std::endl;
         std::cout << "Node[" << i << "] at " << c << std::endl;
         for(Tensor *t : c->buffer){
             std::cout << "  Buffer tensor at " << t << " data addr=" << t->data << std::endl;
-            print_tensor_as_eigen_matrix(t);
+            print_tensor_as_eigen_matrix(t, true);
         }
         for(Tensor *t : c->output){
             std::cout << "  Output tensor at " << t << " data addr=" << t->data << std::endl;
-            print_tensor_as_eigen_matrix(t);
+            print_tensor_as_eigen_matrix(t, true);
         }
         for(Tensor *t : c->grad){
             std::cout << "  Gradient tensor at " << t << " data addr=" << t->data << std::endl;
-            print_tensor_as_eigen_matrix(t);
+            print_tensor_as_eigen_matrix(t, true);
         }
+        std::cout << std::endl;
     }
     std::cout << "----------------------------------" << std::endl;
+}
+
+void Graph::clear_gradients(void){
+    for(int i=0; i<this->nodes.size(); i++) {
+        Node *c = this->nodes[i];
+        for (Tensor *t : c->grad) {
+            if (t == nullptr)
+                continue;
+            if (t->guarded)
+                continue;
+            if (t->data != nullptr) {
+                delete[] t->data;
+                t->data = nullptr;
+            }
+        }
+        for (int j = 0; j < c->grad.size(); j++) {
+            if (c->grad[j] != nullptr && !c->grad[j]->guarded) {
+                delete c->grad[j];
+                c->grad[j] = nullptr;
+            }
+        }
+        c->grad.clear();
+    }
 }
 
 void Graph::clean(void){
@@ -135,14 +160,10 @@ void Graph::backward(Node *a, Node *b){
     if (this->nodes.size() == 0)
         return;
 
-//    for(Node *c : this->nodes){
-//        c->calculate_gradient();
-//    }
-
     Node *s = a;
     if (s == nullptr)
         return;
-    s->calculate_gradient();
+    s->calculate_gradient(false);
 
     this->traverse.clear();
     for(int i=0;i<s->in.size(); i++){
@@ -153,13 +174,42 @@ void Graph::backward(Node *a, Node *b){
         std::pair<Node*, Node*> c = this->traverse[0];
         this->traverse.erase(this->traverse.begin());
 
-        c.second->calculate_gradient();
+        c.second->calculate_gradient(b == c.second);
         if (c.second->grad.size() == c.second->out.size()) {
 
+            if (c.second->grad_type == 0 && c.second->out.size() > 0){
+                std::cout << "[Graph::backward] c.second->grad_type=" << (int)c.second->grad_type << ", c.second->out.size()=" << c.second->out.size() << std::endl;
+                Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(c.second->grad[0]->data, c.second->grad[0]->rows, c.second->grad[0]->cols);
+                Eigen::MatrixXd m_tg = Eigen::MatrixXd::Constant(c.second->grad[0]->rows, c.second->grad[0]->cols, 0.0);
 
+                std::cout << m_lg << std::endl;
+                std::cout << "MLG ROWS: " << m_lg.rows() << ", COLS: " << m_lg.cols() << std::endl;
+                std::cout << m_tg << std::endl;
+                std::cout << "MTG ROWS: " << m_tg.rows() << ", COLS: " << m_tg.cols() << std::endl;
 
+                for (int i = 0; i < c.second->out.size(); i++) {
+                    Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, c.second->out[i]->grad[0]->rows, c.second->out[i]->grad[0]->cols);
+                    std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
+                    std::cout << m_ug << std::endl;
+                    if (m_ug.rows() == m_tg.cols() && m_tg.rows() != m_ug.cols()){
+                        // TODO: Implement transpose of m_ug here
+                    }
+                    std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
+                    std::cout << m_ug << std::endl;
+                    m_tg = m_tg + m_lg.cwiseProduct(m_ug);
+                    std::cout << m_tg << std::endl;
+                }
+                Tensor *t_new = copy_eigen_matrix_to_new_tensor(c.second->grad[0]->rows, c.second->grad[0]->cols, m_tg.data());
+
+                delete[] c.second->grad[0]->data;
+                delete c.second->grad[0];
+                c.second->grad.clear();
+
+                c.second->grad.push_back(t_new);
+            }
+
+            /*
             if (c.second->out.size() > 0){
-                //std::cout << "Eest f'n GYYST! " << c.second << std::endl;
                 unsigned int ingsum_size = c.second->out[0]->grad[0]->rows * c.second->out[0]->grad[0]->cols;
                 double *ingsum = new double[ingsum_size];
                 for (int k = 0; k < ingsum_size; k++) {
@@ -186,15 +236,14 @@ void Graph::backward(Node *a, Node *b){
                     }
                 }
 
-                //std::cout << "[";
-                //for (int k = 0; k < ingsum_size; k++) {std::cout << ingsum[k] << " ";}
-                //std::cout << "]" << std::endl;
-
                 delete[] ingsum;
             }
+            */
 
-
-
+            if (b == c.second){
+                // The desired gradient is calculated, let us break out of the loop.
+                break;
+            }
 
             for(int i = 0; i < c.second->in.size(); i++) {
                 this->traverse.push_back(std::make_pair(c.second, c.second->in[i]));
@@ -204,19 +253,6 @@ void Graph::backward(Node *a, Node *b){
                 // Sum the gradients of out gradients and multiple with the local gradient
             }
         }
-
-        /*
-        for(int i=0;i<c.first->output.size();i++){
-            c.second->buffer.push_back(c.first->output[i]);
-        }
-
-        if (c.second->buffer.size() == c.second->in.size()){
-            c.second->calculate_value();
-            for(int i=0;i<c.second->out.size();i++){
-                this->traverse.push_back(std::make_pair(c.second, c.second->out[i]));
-            }
-        }
-        */
     }
 }
 

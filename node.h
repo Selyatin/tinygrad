@@ -14,13 +14,19 @@
 
 class Node {
 public:
+    /*
+     * How to combine the local gradient and the output gradient:
+     *  0: element-wise product
+     *  1: matrix multiplication
+     */
+    unsigned char grad_type;
     std::vector<Tensor*> grad;
     std::vector<Tensor*> buffer;
     std::vector<Tensor*> output;
     std::vector<Node*> in;
     std::vector<Node*> out;
     virtual void calculate_value(void);
-    virtual void calculate_gradient(void);
+    virtual void calculate_gradient(bool last);
     unsigned int count_inputs(void);
     void connect_to(Node *);
     Node(void);

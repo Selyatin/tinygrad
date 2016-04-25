@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 
 Tensor* copy_eigen_matrix_to_new_tensor(unsigned int, unsigned int, double*);
-void print_tensor_as_eigen_matrix(Tensor *t);
+void print_tensor_as_eigen_matrix(Tensor *t, bool newline);
+Tensor* create_guarded_tensor_with_random_elements(unsigned int h, unsigned int w, double low, double high);
 
 #endif //TINYGRAD_UTILS_H
