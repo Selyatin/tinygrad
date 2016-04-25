@@ -191,12 +191,14 @@ void Graph::backward(Node *a, Node *b){
                     Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, c.second->out[i]->grad[0]->rows, c.second->out[i]->grad[0]->cols);
                     std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
                     std::cout << m_ug << std::endl;
-                    if (m_ug.rows() == m_tg.cols() && m_tg.rows() != m_ug.cols()){
-                        // TODO: Implement transpose of m_ug here
+                    if (m_tg.rows() == m_ug.cols() && m_tg.cols() == m_ug.rows()){
+                        //Eigen::MatrixXd m_ug_t = m_ug.transpose();
+                        m_tg = m_tg + m_lg.cwiseProduct(m_ug.transpose());
+                    } else {
+                        m_tg = m_tg + m_lg.cwiseProduct(m_ug);
                     }
                     std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
                     std::cout << m_ug << std::endl;
-                    m_tg = m_tg + m_lg.cwiseProduct(m_ug);
                     std::cout << m_tg << std::endl;
                 }
                 Tensor *t_new = copy_eigen_matrix_to_new_tensor(c.second->grad[0]->rows, c.second->grad[0]->cols, m_tg.data());
@@ -206,6 +208,10 @@ void Graph::backward(Node *a, Node *b){
                 c.second->grad.clear();
 
                 c.second->grad.push_back(t_new);
+            }
+
+            if (c.second->grad_type == 1 && c.second->out.size() > 0){
+                // TODO: Matrix multiplication
             }
 
             /*
