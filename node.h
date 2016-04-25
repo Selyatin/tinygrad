@@ -8,6 +8,7 @@
 #include <vector>
 #include <utility>
 #include <iostream>
+#include <string>
 #include <Eigen/Core>
 
 #include "tensor.h"
@@ -25,6 +26,7 @@ public:
     std::vector<Tensor*> output;
     std::vector<Node*> in;
     std::vector<Node*> out;
+    std::string name;
     virtual void calculate_value(void);
     virtual void calculate_gradient(bool last);
     unsigned int count_inputs(void);

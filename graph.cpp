@@ -4,6 +4,7 @@
 
 #include "graph.h"
 #include "utils.h"
+#include "nodeimplementations.h"
 
 Graph::Graph(void){
     this->nodes.clear();
@@ -15,7 +16,7 @@ void Graph::print_contents(void) {
     for(int i=0; i<this->nodes.size(); i++) {
         Node *c = this->nodes[i];
         std::cout << std::endl;
-        std::cout << "Node[" << i << "] at " << c << std::endl;
+        std::cout << "Node[" << i << "] '" << c->name << "' at " << c << std::endl;
         for(Tensor *t : c->buffer){
             std::cout << "  Buffer tensor at " << t << " data addr=" << t->data << std::endl;
             print_tensor_as_eigen_matrix(t, true);
@@ -144,13 +145,10 @@ Tensor* Graph::forward(Tensor *input, Node *a, Node *b){
             }
         }
 
-        // TODO: Might not be correct if the input node already has IN nodes (we clear them for the temporary)
-        s->in.clear();
+        s->in.pop_back();
         initial.out.clear();
     }
 
-    // TODO: The evaluation of the flow graph should end when the desired output node is computed.
-    //          Currently every node is computed
     Tensor *value = b->output[0];
 
     return value;
@@ -178,28 +176,17 @@ void Graph::backward(Node *a, Node *b){
         if (c.second->grad.size() == c.second->out.size()) {
 
             if (c.second->grad_type == 0 && c.second->out.size() > 0){
-                std::cout << "[Graph::backward] c.second->grad_type=" << (int)c.second->grad_type << ", c.second->out.size()=" << c.second->out.size() << std::endl;
                 Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(c.second->grad[0]->data, c.second->grad[0]->rows, c.second->grad[0]->cols);
                 Eigen::MatrixXd m_tg = Eigen::MatrixXd::Constant(c.second->grad[0]->rows, c.second->grad[0]->cols, 0.0);
 
-                std::cout << m_lg << std::endl;
-                std::cout << "MLG ROWS: " << m_lg.rows() << ", COLS: " << m_lg.cols() << std::endl;
-                std::cout << m_tg << std::endl;
-                std::cout << "MTG ROWS: " << m_tg.rows() << ", COLS: " << m_tg.cols() << std::endl;
-
                 for (int i = 0; i < c.second->out.size(); i++) {
                     Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, c.second->out[i]->grad[0]->rows, c.second->out[i]->grad[0]->cols);
-                    std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
-                    std::cout << m_ug << std::endl;
                     if (m_tg.rows() == m_ug.cols() && m_tg.cols() == m_ug.rows()){
                         //Eigen::MatrixXd m_ug_t = m_ug.transpose();
                         m_tg = m_tg + m_lg.cwiseProduct(m_ug.transpose());
                     } else {
                         m_tg = m_tg + m_lg.cwiseProduct(m_ug);
                     }
-                    std::cout << "MUG ROWS: " << m_ug.rows() << ", COLS: " << m_ug.cols() << std::endl;
-                    std::cout << m_ug << std::endl;
-                    std::cout << m_tg << std::endl;
                 }
                 Tensor *t_new = copy_eigen_matrix_to_new_tensor(c.second->grad[0]->rows, c.second->grad[0]->cols, m_tg.data());
 
@@ -211,86 +198,81 @@ void Graph::backward(Node *a, Node *b){
             }
 
             if (c.second->grad_type == 1 && c.second->out.size() > 0){
-                // TODO: Matrix multiplication, automatic resolution of the desired multiplication with intelligent guessing order
-		
-		// Container for all of the output gradients to be multiplied with the local gradient
-		unsigned int m_lg_h = 0;
-		unsigned int m_lg_w = 0;
-		unsigned int target_h = c.second->buffer[0]->rows;
-		unsigned int target_w = c.second->buffer[0]->cols;
-		unsigned int m_ug_h = c.second->out[0]->grad[0]->rows;
-		unsigned int m_ug_w = c.second->out[0]->grad[0]->cols;
-		
-		//if (b == c.second){
-		Eigen::MatrixXd m_tg_acc = Eigen::MatrixXd::Constant(target_h, target_w, 0.0);
-		m_lg_h = c.second->grad[0]->rows;
-		m_lg_w = c.second->grad[0]->cols;
-		//}
-
-
-		for (int i = 0; i < c.second->out.size(); i++) {
-                    Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, m_ug_h, m_ug_w);
-		    Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(nullptr, m_lg_h, m_lg_w);
-		    // gradshape = local * upper
-		    if (target_h == m_lg_h && target_w == m_ug_w){
-			Eigen::MatrixXd m_tg = m_lg * m_ug;
-		    	m_tg_acc = m_tg_acc + m_tg;
-		    }
-		    // gradshape = local^T * upper
-		    if (target_h == m_lg_w && target_w == m_ug_w){
-			Eigen::MatrixXd m_tg = m_lg.transpose() * m_ug;
-		    	m_tg_acc = m_tg_acc + m_tg;
-		    }
-		    // gradshape = upper * local
-		    if (target_h == m_ug_h && target_w == m_lg_w){
-			Eigen::MatrixXd m_tg = m_ug * m_lg;
-		    	m_tg_acc = m_tg_acc + m_tg;
-		    }
-		    // gradshape = upper^T * local
-		    if (target_h == m_ug_w && target_w == m_lg_w){
-			Eigen::MatrixXd m_tg = m_ug.transpose() * m_lg;
-		    	m_tg_acc = m_tg_acc + m_tg;
-		    }
-		}
-
-		delete[] c.second->grad[0]->data;
-		delete c.second->grad[0];
-		c.second->grad.clear();
-
-
-            }
-
-            /*
-            if (c.second->out.size() > 0){
-                unsigned int ingsum_size = c.second->out[0]->grad[0]->rows * c.second->out[0]->grad[0]->cols;
-                double *ingsum = new double[ingsum_size];
-                for (int k = 0; k < ingsum_size; k++) {
-                    ingsum[k] = 0.0;
-                }
-                for (int j = 0; j < c.second->out.size(); j++) {
-                    for (int jj = 0; jj < c.second->out[j]->grad.size(); jj++) {
-                        for (int k = 0; k < ingsum_size; k++) {
-                            ingsum[k] = ingsum[k] + c.second->out[j]->grad[jj]->data[k];
-                        }
-                    }
-                }
-
-                if (c.second->grad.size() > 1)
-                    throw std::invalid_argument("The gradient back flow is not implemented for |gradtensors| > 1 yet.");
-
-                if (ingsum_size != 1) {
-                    for (int k = 0; k < ingsum_size; k++) {
-                        c.second->grad[0]->data[k] = c.second->grad[0]->data[k] * ingsum[k];
-                    }
+                unsigned int target_h = 0;
+                unsigned int target_w = 0;
+                if (c.second != b) {
+                    target_h = c.second->buffer[0]->rows;
+                    target_w = c.second->buffer[0]->cols;
                 } else {
-                    for (int kk = 0; kk < c.second->grad[0]->rows*c.second->grad[0]->cols; kk++) {
-                        c.second->grad[0]->data[kk] = c.second->grad[0]->data[kk] * ingsum[0];
+                    target_h = dynamic_cast<NodeMultiplyRightWithMatrix*>(c.second)->mulmat->rows;
+                    target_w = dynamic_cast<NodeMultiplyRightWithMatrix*>(c.second)->mulmat->cols;
+                }
+                //print_tensor_as_eigen_matrix(c.second->buffer[0], true);
+
+                //if (b == c.second){
+                Eigen::MatrixXd m_tg_acc = Eigen::MatrixXd::Constant(target_h, target_w, 0.0);
+                unsigned int m_lg_h = c.second->grad[0]->rows;
+                unsigned int m_lg_w = c.second->grad[0]->cols;
+
+                for (int i = 0; i < c.second->out.size(); i++) {
+                    unsigned int m_ug_h = c.second->out[0]->grad[i]->rows;
+                    unsigned int m_ug_w = c.second->out[0]->grad[i]->cols;
+                    Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, m_ug_h, m_ug_w);
+                    Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(c.second->grad[0]->data, m_lg_h, m_lg_w);
+
+                    //std::cout << "T: " << target_h << ", " << target_w << " | UG: " << m_ug_h << ", " << m_ug_w << " | LG: " << m_lg_h << ", " << m_lg_w << std::endl;
+                    //std::cout << c.second << std::endl << std::endl;
+                    //print_tensor_as_eigen_matrix(c.second->grad[0], true);
+                    //print_tensor_as_eigen_matrix(c.second->out[0]->grad[i], true);
+
+                    if (target_h == m_lg_h && target_w == m_ug_w && m_lg_w == m_ug_h){
+                        //std::cout << "Multiply FIRST" << std::endl;
+                        Eigen::MatrixXd m_tg = m_lg * m_ug;
+                        m_tg_acc = m_tg_acc + m_tg;
                     }
+
+                    if (target_h == m_ug_h && target_w == m_lg_w && m_ug_w == m_lg_h){
+                        //std::cout << "Multiply TWO" << std::endl;
+                        Eigen::MatrixXd m_tg = m_ug * m_lg;
+                        m_tg_acc = m_tg_acc + m_tg;
+                    }
+
+                    if (target_h == m_ug_h && target_w == m_lg_h && m_ug_w == m_lg_w){
+                        //std::cout << "Multiply THREE" << std::endl;
+                        Eigen::MatrixXd m_tg = m_ug * m_lg.transpose();
+                        m_tg_acc = m_tg_acc + m_tg;
+                        //std::cout << m_tg << std::endl;
+                    }
+
+                    if (target_h == m_lg_w && target_w == m_ug_w && m_lg_h == m_ug_h){
+                        //std::cout << "Multiply FOUR" << std::endl;
+                        Eigen::MatrixXd m_tg = m_lg.transpose() * m_ug;
+                        m_tg_acc = m_tg_acc + m_tg;
+                        /*
+                        std::cout << "m_tg" << std::endl;
+                        std::cout << m_tg << std::endl << std::endl;
+                        std::cout << "m_lg" << std::endl;
+                        std::cout << m_lg << std::endl << std::endl;
+                        std::cout << "m_ug" << std::endl;
+                        std::cout << m_ug << std::endl << std::endl;
+                        std::cout << "m_tg_acc" << std::endl;
+                        std::cout << m_tg_acc << std::endl << std::endl;
+                        */
+                    }
+
+                    //std::cout << "m_tg_acc" << std::endl;
+                    //std::cout << m_tg_acc << std::endl;
+
                 }
 
-                delete[] ingsum;
+                delete[] c.second->grad[0]->data;
+                delete c.second->grad[0];
+                c.second->grad.clear();
+
+                c.second->grad.push_back(copy_eigen_matrix_to_new_tensor((unsigned int)m_tg_acc.rows(), (unsigned int)m_tg_acc.cols(), m_tg_acc.data()));
+
+
             }
-            */
 
             if (b == c.second){
                 // The desired gradient is calculated, let us break out of the loop.
@@ -299,11 +281,8 @@ void Graph::backward(Node *a, Node *b){
 
             for(int i = 0; i < c.second->in.size(); i++) {
                 this->traverse.push_back(std::make_pair(c.second, c.second->in[i]));
-
-                // TODO: Calculate the total gradient of c.second here
-                // How to calculate the total gradient of a node:
-                // Sum the gradients of out gradients and multiple with the local gradient
             }
+
         }
     }
 }

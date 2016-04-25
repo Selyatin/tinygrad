@@ -31,6 +31,7 @@ void NodeElementWisePower::calculate_gradient(bool last){
 
 NodeElementWisePower::NodeElementWisePower(double power) : Node() {
     this->power = power;
+    this->name = "NodeElementWisePower";
 }
 
 /*
@@ -56,6 +57,10 @@ void NodeSumAllTensorElements::calculate_gradient(bool last){
         Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
         this->grad.push_back(t_new);
     }
+}
+
+NodeSumAllTensorElements::NodeSumAllTensorElements(void){
+    this->name = "NodeSumAllTensorElements";
 }
 
 /*
@@ -85,6 +90,7 @@ void NodeElementWiseAddConstant::calculate_gradient(bool last){
 
 NodeElementWiseAddConstant::NodeElementWiseAddConstant(double addition) : Node() {
     this->addition = addition;
+    this->name = "NodeElementWiseAddConstant";
 }
 
 /*
@@ -109,6 +115,10 @@ void NodeElementWiseSigmoidFunction::calculate_gradient(bool last){
         }
         this->grad.push_back(t_new);
     }
+}
+
+NodeElementWiseSigmoidFunction::NodeElementWiseSigmoidFunction(void){
+    this->name = "NodeElementWiseSigmoidFunction";
 }
 
 /*
@@ -136,6 +146,7 @@ void NodeElementWiseConstantMultiply::calculate_gradient(bool last){
 
 NodeElementWiseConstantMultiply::NodeElementWiseConstantMultiply(double multiple) {
     this->multiple = multiple;
+    this->name = "NodeElementWiseConstantMultiply";
 }
 
 /*
@@ -164,6 +175,10 @@ void NodeElementWiseLog::calculate_gradient(bool last){
     }
 }
 
+NodeElementWiseLog::NodeElementWiseLog(void){
+    this->name = "NodeElementWiseLog";
+}
+
 /*
  * Identity operator
  */
@@ -181,6 +196,10 @@ void NodeIdentity::calculate_gradient(bool last){
     Eigen::MatrixXd m = Eigen::MatrixXd::Constant(h, w, 1.0);
     Tensor *t_new = copy_eigen_matrix_to_new_tensor(h, w, m.data());
     this->grad.push_back(t_new);
+}
+
+NodeIdentity::NodeIdentity(void){
+    this->name = "NodeIdentity";
 }
 
 /*
@@ -220,6 +239,7 @@ void NodeMultiplyRightWithMatrix::update_matrix(Tensor *t){
 NodeMultiplyRightWithMatrix::NodeMultiplyRightWithMatrix(Tensor *t){
     this->mulmat = t;
     this->grad_type = 1;
+    this->name = "NodeMultiplyRightWithMatrix";
 }
 
 /*
@@ -248,6 +268,10 @@ void NodeTransposeMatrix::calculate_gradient(bool last){
     Eigen::MatrixXd m = Eigen::MatrixXd::Constant(h, w, 1.0);
     Tensor *t_new = copy_eigen_matrix_to_new_tensor(h, w, m.data());
     this->grad.push_back(t_new);
+}
+
+NodeTransposeMatrix::NodeTransposeMatrix(void){
+    this->name = "NodeTransposeMatrix";
 }
 
 /*
@@ -281,6 +305,7 @@ void NodeSingleSquaredError::update_target(double target){
 
 NodeSingleSquaredError::NodeSingleSquaredError(double target) {
     this->target = target;
+    this->name = "NodeSingleSquaredError";
 }
 
 /*
@@ -314,4 +339,5 @@ void NodeSingleBinaryCrossEntropy::update_target(double target){
 
 NodeSingleBinaryCrossEntropy::NodeSingleBinaryCrossEntropy(double target) {
     this->target = target;
+    this->name = "NodeSingleBinaryCrossEntropy";
 }

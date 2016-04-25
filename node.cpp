@@ -25,4 +25,5 @@ Node::Node() {
     this->buffer.clear();
     this->output.clear();
     this->grad_type = 0;
+    this->name = "Node";
 }

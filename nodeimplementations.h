@@ -24,12 +24,14 @@ class NodeSumAllTensorElements : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
+    NodeSumAllTensorElements(void);
 };
 
 class NodeTransposeMatrix : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
+    NodeTransposeMatrix(void);
 };
 
 class NodeMultiplyRightWithMatrix : public Node{
@@ -48,24 +50,28 @@ public:
     void calculate_value(void);
     void calculate_gradient(bool last);
     NodeElementWisePower(double);
+    NodeElementWisePower(void);
 };
 
 class NodeElementWiseSigmoidFunction : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
+    NodeElementWiseSigmoidFunction(void);
 };
 
 class NodeElementWiseLog : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
+    NodeElementWiseLog(void);
 };
 
 class NodeIdentity : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
+    NodeIdentity(void);
 };
 
 class NodeElementWiseConstantMultiply : public Node{

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.8)
 project(tinygrad)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
@@ -8,6 +8,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-set(SOURCE_FILES main.cpp node.cpp node.h nodeimplementations.cpp nodeimplementations.h tensor.cpp tensor.h graph.cpp graph.h utils.cpp utils.h)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build")
+set(SOURCE_FILES main.cpp node.cpp node.h nodeimplementations.cpp nodeimplementations.h tensor.cpp tensor.h graph.cpp graph.h utils.cpp utils.h models.cpp models.h)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build")
 add_executable(tinygrad ${SOURCE_FILES})
