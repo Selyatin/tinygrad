@@ -9,5 +9,5 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 set(SOURCE_FILES main.cpp node.cpp node.h nodeimplementations.cpp nodeimplementations.h tensor.cpp tensor.h graph.cpp graph.h utils.cpp utils.h)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "/home/niko/Projektit/tinygrad/build")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build")
 add_executable(tinygrad ${SOURCE_FILES})

@@ -211,7 +211,53 @@ void Graph::backward(Node *a, Node *b){
             }
 
             if (c.second->grad_type == 1 && c.second->out.size() > 0){
-                // TODO: Matrix multiplication
+                // TODO: Matrix multiplication, automatic resolution of the desired multiplication with intelligent guessing order
+		
+		// Container for all of the output gradients to be multiplied with the local gradient
+		unsigned int m_lg_h = 0;
+		unsigned int m_lg_w = 0;
+		unsigned int target_h = c.second->buffer[0]->rows;
+		unsigned int target_w = c.second->buffer[0]->cols;
+		unsigned int m_ug_h = c.second->out[0]->grad[0]->rows;
+		unsigned int m_ug_w = c.second->out[0]->grad[0]->cols;
+		
+		//if (b == c.second){
+		Eigen::MatrixXd m_tg_acc = Eigen::MatrixXd::Constant(target_h, target_w, 0.0);
+		m_lg_h = c.second->grad[0]->rows;
+		m_lg_w = c.second->grad[0]->cols;
+		//}
+
+
+		for (int i = 0; i < c.second->out.size(); i++) {
+                    Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, m_ug_h, m_ug_w);
+		    Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(nullptr, m_lg_h, m_lg_w);
+		    // gradshape = local * upper
+		    if (target_h == m_lg_h && target_w == m_ug_w){
+			Eigen::MatrixXd m_tg = m_lg * m_ug;
+		    	m_tg_acc = m_tg_acc + m_tg;
+		    }
+		    // gradshape = local^T * upper
+		    if (target_h == m_lg_w && target_w == m_ug_w){
+			Eigen::MatrixXd m_tg = m_lg.transpose() * m_ug;
+		    	m_tg_acc = m_tg_acc + m_tg;
+		    }
+		    // gradshape = upper * local
+		    if (target_h == m_ug_h && target_w == m_lg_w){
+			Eigen::MatrixXd m_tg = m_ug * m_lg;
+		    	m_tg_acc = m_tg_acc + m_tg;
+		    }
+		    // gradshape = upper^T * local
+		    if (target_h == m_ug_w && target_w == m_lg_w){
+			Eigen::MatrixXd m_tg = m_ug.transpose() * m_lg;
+		    	m_tg_acc = m_tg_acc + m_tg;
+		    }
+		}
+
+		delete[] c.second->grad[0]->data;
+		delete c.second->grad[0];
+		c.second->grad.clear();
+
+
             }
 
             /*
