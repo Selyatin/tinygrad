@@ -182,7 +182,6 @@ void Graph::backward(Node *a, Node *b){
                 for (int i = 0; i < c.second->out.size(); i++) {
                     Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, c.second->out[i]->grad[0]->rows, c.second->out[i]->grad[0]->cols);
                     if (m_tg.rows() == m_ug.cols() && m_tg.cols() == m_ug.rows()){
-                        //Eigen::MatrixXd m_ug_t = m_ug.transpose();
                         m_tg = m_tg + m_lg.cwiseProduct(m_ug.transpose());
                     } else {
                         m_tg = m_tg + m_lg.cwiseProduct(m_ug);
@@ -207,9 +206,7 @@ void Graph::backward(Node *a, Node *b){
                     target_h = dynamic_cast<NodeMultiplyRightWithMatrix*>(c.second)->mulmat->rows;
                     target_w = dynamic_cast<NodeMultiplyRightWithMatrix*>(c.second)->mulmat->cols;
                 }
-                //print_tensor_as_eigen_matrix(c.second->buffer[0], true);
 
-                //if (b == c.second){
                 Eigen::MatrixXd m_tg_acc = Eigen::MatrixXd::Constant(target_h, target_w, 0.0);
                 unsigned int m_lg_h = c.second->grad[0]->rows;
                 unsigned int m_lg_w = c.second->grad[0]->cols;
@@ -220,58 +217,28 @@ void Graph::backward(Node *a, Node *b){
                     Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(c.second->out[i]->grad[0]->data, m_ug_h, m_ug_w);
                     Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(c.second->grad[0]->data, m_lg_h, m_lg_w);
 
-                    //std::cout << "T: " << target_h << ", " << target_w << " | UG: " << m_ug_h << ", " << m_ug_w << " | LG: " << m_lg_h << ", " << m_lg_w << std::endl;
-                    //std::cout << c.second << std::endl << std::endl;
-                    //print_tensor_as_eigen_matrix(c.second->grad[0], true);
-                    //print_tensor_as_eigen_matrix(c.second->out[0]->grad[i], true);
-
                     if (target_h == m_lg_h && target_w == m_ug_w && m_lg_w == m_ug_h){
-                        //std::cout << "Multiply FIRST" << std::endl;
                         Eigen::MatrixXd m_tg = m_lg * m_ug;
                         m_tg_acc = m_tg_acc + m_tg;
                     }
-
                     if (target_h == m_ug_h && target_w == m_lg_w && m_ug_w == m_lg_h){
-                        //std::cout << "Multiply TWO" << std::endl;
                         Eigen::MatrixXd m_tg = m_ug * m_lg;
                         m_tg_acc = m_tg_acc + m_tg;
                     }
-
                     if (target_h == m_ug_h && target_w == m_lg_h && m_ug_w == m_lg_w){
-                        //std::cout << "Multiply THREE" << std::endl;
                         Eigen::MatrixXd m_tg = m_ug * m_lg.transpose();
                         m_tg_acc = m_tg_acc + m_tg;
-                        //std::cout << m_tg << std::endl;
                     }
-
                     if (target_h == m_lg_w && target_w == m_ug_w && m_lg_h == m_ug_h){
-                        //std::cout << "Multiply FOUR" << std::endl;
                         Eigen::MatrixXd m_tg = m_lg.transpose() * m_ug;
                         m_tg_acc = m_tg_acc + m_tg;
-                        /*
-                        std::cout << "m_tg" << std::endl;
-                        std::cout << m_tg << std::endl << std::endl;
-                        std::cout << "m_lg" << std::endl;
-                        std::cout << m_lg << std::endl << std::endl;
-                        std::cout << "m_ug" << std::endl;
-                        std::cout << m_ug << std::endl << std::endl;
-                        std::cout << "m_tg_acc" << std::endl;
-                        std::cout << m_tg_acc << std::endl << std::endl;
-                        */
                     }
-
-                    //std::cout << "m_tg_acc" << std::endl;
-                    //std::cout << m_tg_acc << std::endl;
-
                 }
 
                 delete[] c.second->grad[0]->data;
                 delete c.second->grad[0];
                 c.second->grad.clear();
-
                 c.second->grad.push_back(copy_eigen_matrix_to_new_tensor((unsigned int)m_tg_acc.rows(), (unsigned int)m_tg_acc.cols(), m_tg_acc.data()));
-
-
             }
 
             if (b == c.second){
