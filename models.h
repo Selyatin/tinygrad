@@ -24,14 +24,23 @@ public:
     ~ClassifierLogisticRegression(void);
 };
 
-/*
-class ClassifierNeuralNetworkTwoLayers {
+class ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput {
+private:
+    Tensor w1;
+    Tensor w2;
 public:
     Graph g;
+    NodeMultiplyRightWithMatrix *n1;
+    NodeElementWiseSigmoidFunction *n2;
+    NodeMultiplyRightWithMatrix *n3;
+    NodeElementWiseSigmoidFunction *n4;
+    NodeSingleBinaryCrossEntropy *n5;
     unsigned int data_dimensionality;
+    unsigned int n_hidden;
     Tensor* evaluate(Tensor*);
-    ClassifierNeuralNetworkTwoLayers(unsigned int data_dimensionality);
+    void sgd(Tensor *input, double target, double lr);
+    ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput(unsigned int data_dimensionality, unsigned int n_hidden);
+    ~ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput(void);
 };
-*/
 
 #endif //TINYGRAD_MODELS_H

@@ -59,6 +59,7 @@ void Graph::clear_gradients(void){
 
 void Graph::clean(void){
     // Free the buffered tensors of the first node (not in the output of any node)
+
     for(Tensor *t : this->nodes[0]->buffer){
         if (t == nullptr)
             continue;

@@ -2,50 +2,52 @@
 #include "node.h"
 #include "utils.h"
 #include "models.h"
-
-// fRand originates from http://stackoverflow.com/questions/2704521/generate-random-double-numbers-in-c
-double fRand(double fMin, double fMax){
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
+#include "dataset.h"
 
 int main() {
-    std::cout << "tinygrad testing" << std::endl;
+    std::cout << "Evaluating an implementation of a neural network" << std::endl;
 
-    srand(8458);
+    Dataset ds;
+    ds.read_csv("dataset.txt");
+    unsigned int n_features = ds.features;
 
-    std::cout << "Evaluating an implementation of logistic regression" << std::endl;
-    unsigned int n_features = 4;
-    ClassifierLogisticRegression clf(n_features);
-    Tensor *input = create_guarded_tensor_with_random_elements(1, n_features, 0.0, 2.0); // input);
+    //ClassifierLogisticRegression clf(n_features);
+    ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput clf(n_features, 10);
 
-    int repeats = 100;
+    Tensor *input = create_guarded_tensor_with_random_elements(1, n_features, 0.0, 2.0);
+
+    int epochs = 100;
     double target;
-    while(repeats > 0) {
-        // Create a random input (x) and target label (y) for classification (two classes).
-        if (repeats % 2 == 0){
-            for(int i=0;i<n_features;i++){
-                input->data[i] = fRand(0.0, 1.0);
+    while(epochs > 0) {
+        double correct_classifications = 0.0;
+        ds.random_swap(30); // Not exactly shuffling but at least some perturbation into example ordering
+
+        // Read input (x) and target label (y) for classification (two classes).
+        for(int example_index=0; example_index<ds.records; example_index++){
+            target = ds.y[example_index];
+            for(int feature=0; feature<ds.features; feature++){
+                input->data[feature] = ds.x[example_index*ds.features+feature];
             }
-            target = 1.0;
-        } else {
-            for(int i=0;i<n_features;i++){
-                input->data[i] = fRand(-1.0, 0.0);
-            }
-            target = 0.0;
+
+            // Evaluate a given input
+            Tensor *result = clf.evaluate(input);
+
+            // Bookkeeping for computing the resulting accuracy
+            if (result->data[0] > 0.5 && target == 1.0)
+                correct_classifications++;
+            if (result->data[0] < 0.5 && target == 0.0)
+                correct_classifications++;
+
+            // Compute stochastic gradient descend with a given learning rate
+            clf.sgd(input, target, 0.05);
         }
 
-        // Evaluate a given input
-        std::cout << "f(";
-        print_tensor_as_eigen_matrix(input, false);
-        std::cout << ") = ";
-        print_tensor_as_eigen_matrix(clf.evaluate(input), true);
-
-        // Compute stochastic gradient descend with a given learning rate
-        clf.sgd(input, target, 0.1);
-
-        repeats--;
+        std::cout << "Classification accuracy: " << correct_classifications / ds.records << std::endl;
+        epochs--;
     }
+
+    delete[] input->data;
+    delete input;
 
     return 0;
 }

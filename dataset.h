@@ -14,7 +14,9 @@ public:
     double *x;
     double *y;
     void read_csv(std::string filename);
+    void random_swap(unsigned int how_many);
     Dataset(void);
+    ~Dataset(void);
 };
 
 
