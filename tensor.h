@@ -10,7 +10,7 @@ public:
     unsigned int cols, rows;
     double *data;
     bool guarded;
-    Tensor(unsigned int, unsigned int);
+    Tensor(unsigned int rows, unsigned int cols);
 };
 
 

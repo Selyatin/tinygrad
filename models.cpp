@@ -9,7 +9,7 @@ Tensor* ClassifierLogisticRegression::evaluate(Tensor* input){
     return this->g.forward(input, this->n1, this->n2);
 }
 
-void ClassifierLogisticRegression::sgd(Tensor *input, double target, double lr){
+void ClassifierLogisticRegression::sgd(Tensor *input, Tensor *target, double lr){
     this->evaluate(input);
     this->n3->update_target(target);
     this->g.backward(this->n3, this->n1);
@@ -27,7 +27,7 @@ ClassifierLogisticRegression::ClassifierLogisticRegression(unsigned int data_dim
     }
     this->n1 = new NodeMultiplyRightWithMatrix(&this->weights);
     this->n2 = new NodeElementWiseSigmoidFunction;
-    this->n3 = new NodeSingleBinaryCrossEntropy(0.0);
+    this->n3 = new NodeBinaryCrossEntropy();
     this->g.add_node(this->n1);
     this->g.add_node(this->n2);
     this->g.add_node(this->n3);
@@ -44,15 +44,73 @@ ClassifierLogisticRegression::~ClassifierLogisticRegression(void){
 }
 
 /*
+ * A reference implementation of an autoencoder with one hidden layer and sigmoid activations.
+ */
+Tensor* AutoencoderSigmoidActivationsOneHiddenLayer::evaluate(Tensor* input){
+    this->g.clean();
+    return this->g.forward(input, this->n1, this->n3);
+}
+
+void AutoencoderSigmoidActivationsOneHiddenLayer::sgd(Tensor *input, Tensor *target, double lr){
+    this->evaluate(input);
+    this->n4->update_target(target);
+    this->g.backward(this->n4, this->n1);
+    for(int i=0; i<this->w1.cols*this->w1.rows; i++){
+        this->w1.data[i] = this->w1.data[i] - lr * this->n1->grad[0]->data[i];
+    }
+    this->g.clear_gradients();
+    this->g.backward(this->n4, this->n3);
+    for(int i=0; i<this->w2.cols*this->w2.rows; i++){
+        this->w2.data[i] = this->w2.data[i] - lr * this->n3->grad[0]->data[i];
+    }
+}
+
+AutoencoderSigmoidActivationsOneHiddenLayer::AutoencoderSigmoidActivationsOneHiddenLayer(
+        unsigned int data_dimensionality, unsigned int n_hidden) : w1(data_dimensionality, n_hidden), w2(n_hidden, data_dimensionality) {
+    this->data_dimensionality = data_dimensionality;
+    this->n_hidden = n_hidden;
+    this->w1.guarded = true;
+    this->w2.guarded = true;
+    this->w1.data = new double[data_dimensionality*n_hidden];
+    this->w2.data = new double[n_hidden*data_dimensionality];
+    for(int i=0;i < data_dimensionality*n_hidden; i++){
+        this->w1.data[i] = (double)rand() / RAND_MAX;
+        this->w2.data[i] = (double)rand() / RAND_MAX;
+    }
+    this->n1 = new NodeMultiplyRightWithMatrix(&this->w1);
+    this->n2 = new NodeElementWiseSigmoidFunction;
+    this->n3 = new NodeMultiplyRightWithMatrix(&this->w2);
+    this->n4 = new NodeSquaredError();
+    this->g.add_node(this->n1);
+    this->g.add_node(this->n2);
+    this->g.add_node(this->n3);
+    this->g.add_node(this->n4);
+    this->g.connect_to(0, 1);
+    this->g.connect_to(1, 2);
+    this->g.connect_to(2, 3);
+}
+
+AutoencoderSigmoidActivationsOneHiddenLayer::~AutoencoderSigmoidActivationsOneHiddenLayer(void){
+    this->g.clean();
+    delete[] this->w1.data;
+    delete[] this->w2.data;
+    delete this->n1;
+    delete this->n2;
+    delete this->n3;
+    delete this->n4;
+}
+
+
+/*
  * A reference implementation of a neural network with one hidden layer, sigmoid
  * activations and one sigmoid output (single activation).
  */
-Tensor* ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::evaluate(Tensor* input){
+Tensor* ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::evaluate(Tensor* input){
     this->g.clean();
     return this->g.forward(input, this->n1, this->n4);
 }
 
-void ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::sgd(Tensor *input, double target, double lr){
+void ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::sgd(Tensor *input, Tensor *target, double lr){
     this->evaluate(input);
     this->n5->update_target(target);
     this->g.backward(this->n5, this->n1);
@@ -66,7 +124,7 @@ void ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::sgd(Tenso
     }
 }
 
-ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput(
+ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer(
         unsigned int data_dimensionality, unsigned int n_hidden) : w1(data_dimensionality, n_hidden), w2(n_hidden, 1) {
     this->data_dimensionality = data_dimensionality;
     this->n_hidden = n_hidden;
@@ -84,7 +142,7 @@ ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::ClassifierNeur
     this->n2 = new NodeElementWiseSigmoidFunction;
     this->n3 = new NodeMultiplyRightWithMatrix(&this->w2);
     this->n4 = new NodeElementWiseSigmoidFunction;
-    this->n5 = new NodeSingleBinaryCrossEntropy(0.0);
+    this->n5 = new NodeBinaryCrossEntropy();
     this->g.add_node(this->n1);
     this->g.add_node(this->n2);
     this->g.add_node(this->n3);
@@ -96,7 +154,7 @@ ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::ClassifierNeur
     this->g.connect_to(3, 4);
 }
 
-ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput::~ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayerOneOutput(void){
+ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::~ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer(void){
     this->g.clean();
     delete[] this->w1.data;
     delete[] this->w2.data;

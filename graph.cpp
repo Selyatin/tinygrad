@@ -8,6 +8,7 @@
 
 Graph::Graph(void){
     this->nodes.clear();
+    this->available_identifier = 0;
 }
 
 void Graph::print_contents(void) {

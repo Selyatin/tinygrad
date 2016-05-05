@@ -1,7 +1,7 @@
 # tinygrad
 Evaluate flow graphs and compute their gradients. Many methods can be implemented as a flow graph, which include the following examples:
 - Neural networks
-- Linear classifiers (perceptron, logistic regression, any model with a separating hyperplane)
+- Linear classifiers
 - Dimensionality reduction
 
 ## Install Eigen and compile the example code

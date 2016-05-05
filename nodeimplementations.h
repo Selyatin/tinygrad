@@ -50,7 +50,6 @@ public:
     void calculate_value(void);
     void calculate_gradient(bool last);
     NodeElementWisePower(double);
-    NodeElementWisePower(void);
 };
 
 class NodeElementWiseSigmoidFunction : public Node{
@@ -83,24 +82,24 @@ public:
     NodeElementWiseConstantMultiply(double);
 };
 
-class NodeSingleSquaredError : public Node{
+class NodeSquaredError : public Node{
 private:
-    double target;
+    Tensor *target;
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
-    void update_target(double);
-    NodeSingleSquaredError(double);
+    void update_target(Tensor*);
+    NodeSquaredError(void);
 };
 
-class NodeSingleBinaryCrossEntropy : public Node{
+class NodeBinaryCrossEntropy : public Node{
 private:
-    double target;
+    Tensor *target;
 public:
     void calculate_value(void);
     void calculate_gradient(bool last);
-    void update_target(double);
-    NodeSingleBinaryCrossEntropy(double);
+    void update_target(Tensor*);
+    NodeBinaryCrossEntropy(void);
 };
 
 #endif //TINYGRAD_NODEIMPLEMENTATIONS_H

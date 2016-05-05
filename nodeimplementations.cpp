@@ -226,7 +226,6 @@ void NodeMultiplyRightWithMatrix::calculate_value(void){
 }
 
 void NodeMultiplyRightWithMatrix::calculate_gradient(bool last){
-    // TODO: Implement matrix multiplication between t1 and the top gradient
     Tensor *t1 = last ? this->buffer[0] : this->mulmat;
     Tensor *t_new = copy_eigen_matrix_to_new_tensor(t1->rows, t1->cols, t1->data);
     this->grad.push_back(t_new);
@@ -277,67 +276,99 @@ NodeTransposeMatrix::NodeTransposeMatrix(void){
 /*
  * Compute the squared error between a real value and a target real value
  */
-void NodeSingleSquaredError::calculate_value(void){
+void NodeSquaredError::calculate_value(void){
     this->output.clear();
-    if (this->buffer.size() != 1)
-        throw std::invalid_argument("[NodeSingleSquaredError] the number of buffered tensors is not one.");
+    if (this->target == nullptr)
+        throw std::invalid_argument("[NodeSquaredError] the target tensor is not set!");
 
-    Tensor *t = this->buffer[0];
-    double difference = 0.5 * pow((t->data[0] - this->target), 2.0);
+    if (this->buffer.size() != 1) {
+        throw std::invalid_argument("[NodeSquaredError] the number of buffered tensors is not one.");
+    }
+
+    if (this->target->rows != this->buffer[0]->rows || this->target->cols != this->buffer[0]->cols){
+        throw std::invalid_argument("[NodeSquaredError] the dimensions between the input and target do not match.");
+    }
+
+    Eigen::MatrixXd m_y = Eigen::Map<Eigen::MatrixXd>(this->target->data, this->target->rows, this->target->cols);
+    Eigen::MatrixXd m_yhat = Eigen::Map<Eigen::MatrixXd>(this->buffer[0]->data, this->buffer[0]->rows, this->buffer[0]->cols);
+    Eigen::MatrixXd m_diff = m_y - m_yhat;
+
+    double difference = m_diff.norm();
+
     Eigen::MatrixXd m = Eigen::MatrixXd::Constant(1, 1, 0.0);
     m << difference;
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
+
+    Tensor *t_new = copy_eigen_matrix_to_new_tensor(1, 1, m.data());
     this->output.push_back(t_new);
 }
 
-void NodeSingleSquaredError::calculate_gradient(bool last){
+void NodeSquaredError::calculate_gradient(bool last){
     Tensor *t = this->buffer[0];
-    double derivative = t->data[0] - this->target;
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(1, 1, 0.0);
-    m << derivative;
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
+    Eigen::MatrixXd m_y = Eigen::Map<Eigen::MatrixXd>(this->target->data, this->target->rows, this->target->cols);
+    Eigen::MatrixXd m_yhat = Eigen::Map<Eigen::MatrixXd>(t->data, t->rows, t->cols);
+    Eigen::MatrixXd m_grad = m_yhat - m_y;
+
+    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m_grad.data());
     this->grad.push_back(t_new);
 }
 
-void NodeSingleSquaredError::update_target(double target){
+void NodeSquaredError::update_target(Tensor *target){
     this->target = target;
 }
 
-NodeSingleSquaredError::NodeSingleSquaredError(double target) {
-    this->target = target;
-    this->name = "NodeSingleSquaredError";
+NodeSquaredError::NodeSquaredError(void) {
+    this->name = "NodeSquaredError";
+    this->target = nullptr;
+    this->grad_type = 1;
 }
 
 /*
  * Compute the cross entropy loss between a real value and a target real value
  */
-void NodeSingleBinaryCrossEntropy::calculate_value(void){
+void NodeBinaryCrossEntropy::calculate_value(void){
     this->output.clear();
     if (this->buffer.size() != 1)
-        throw std::invalid_argument("[NodeSingleBinaryCrossEntropy] the number of buffered tensors is not one.");
+        throw std::invalid_argument("[NodeBinaryCrossEntropy] the number of buffered tensors is not one.");
 
-    Tensor *t = this->buffer[0];
-    double cross_entropy = (-1.0) * (this->target*log(t->data[0]) + (1.0-this->target)*log(1.0-t->data[0]));
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(1, 1, 0.0);
-    m << cross_entropy;
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-    this->output.push_back(t_new);
+    Tensor *y_target = this->target;
+    Tensor *y_computed = this->buffer[0];
+
+    if (y_target->rows != y_computed->rows || y_target->cols != y_computed->cols)
+        throw std::invalid_argument("[NodeBinaryCrossEntropy] dimension mismatch between y and yhat.");
+
+    Tensor *y_crossentropy = new Tensor(y_target->rows, y_target->cols);
+    y_crossentropy->data = new double[y_target->rows*y_target->cols];
+
+    for(int i=0;i<y_target->rows*y_target->cols;i++){
+        y_crossentropy->data[i] = (-1.0) * (this->target->data[i]*log(y_computed->data[i]) + (1.0-this->target->data[i])*log(1.0-y_computed->data[i]));
+    }
+
+    this->output.push_back(y_crossentropy);
 }
 
-void NodeSingleBinaryCrossEntropy::calculate_gradient(bool last){
-    Tensor *t = this->buffer[0];
-    double derivative = ((1.0 - this->target) / (1.0 - t->data[0])) - (this->target / t->data[0]);
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(1, 1, 0.0);
-    m << derivative;
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-    this->grad.push_back(t_new);
+void NodeBinaryCrossEntropy::calculate_gradient(bool last){
+    Tensor *y_target = this->target;
+    Tensor *y_computed = this->buffer[0];
+
+    if (y_target->rows != y_computed->rows || y_target->cols != y_computed->cols)
+        throw std::invalid_argument("[NodeBinaryCrossEntropy] dimension mismatch between y and yhat.");
+
+    Tensor *y_crossentropy_derivative = new Tensor(y_target->rows, y_target->cols);
+    y_crossentropy_derivative->data = new double[y_target->rows*y_target->cols];
+
+    for(int i=0;i<y_target->rows*y_target->cols;i++){
+        y_crossentropy_derivative->data[i] = ((1.0 - y_target->data[i]) / (1.0 - y_computed->data[i])) - (y_target->data[i] / y_computed->data[i]);
+    }
+
+    this->grad.push_back(y_crossentropy_derivative);
 }
 
-void NodeSingleBinaryCrossEntropy::update_target(double target){
+void NodeBinaryCrossEntropy::update_target(Tensor *target){
     this->target = target;
 }
 
-NodeSingleBinaryCrossEntropy::NodeSingleBinaryCrossEntropy(double target) {
-    this->target = target;
-    this->name = "NodeSingleBinaryCrossEntropy";
+NodeBinaryCrossEntropy::NodeBinaryCrossEntropy(void) {
+    this->name = "NodeBinaryCrossEntropy";
+    this->target = nullptr;
+    this->grad_type = 1;
 }
