@@ -3,7 +3,7 @@
 # A simple script to build tinygrad from scratch.
 
 # Ad-hoc approach to test if the script is executed in the root folder of tinygrad.
-if [ ! -f "graph.cpp" ]; then
+if [ ! -f "build.sh" ]; then
     echo "Please execute the script in the tinygrad root folder."
     exit 1
 fi

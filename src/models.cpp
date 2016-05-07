@@ -76,7 +76,7 @@ AutoencoderSigmoidActivationsOneHiddenLayer::AutoencoderSigmoidActivationsOneHid
         this->w2.data[i] = (double)rand() / RAND_MAX;
     }
     this->n1 = new NodeMultiplyRightWithMatrix(&this->w1);
-    this->n2 = new NodeElementWiseSigmoidFunction;
+    this->n2 = new NodeElementWiseSigmoidFunction();
     this->n3 = new NodeMultiplyRightWithMatrix(&this->w2);
     this->n4 = new NodeSquaredError();
     this->g.add_node(this->n1);
@@ -135,7 +135,7 @@ ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::ClassifierNeuralNetwork
         this->w2.data[i] = (double)rand() / RAND_MAX;
     }
     this->n1 = new NodeMultiplyRightWithMatrix(&this->w1);
-    this->n2 = new NodeElementWiseSigmoidFunction;
+    this->n2 = new NodeElementWiseSigmoidFunction();
     this->n3 = new NodeMultiplyRightWithMatrix(&this->w2);
     this->n4 = new NodeElementWiseSigmoidFunction;
     this->n5 = new NodeBinaryCrossEntropy();
@@ -211,9 +211,9 @@ ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers::ClassifierNeuralNetwor
         this->w3.data[i] = fRand_(-2.0, 2.0);
     }
     this->n1 = new NodeMultiplyRightWithMatrix(&this->w1);
-    this->n2 = new NodeElementWiseSigmoidFunction;
+    this->n2 = new NodeElementWiseSigmoidFunction();
     this->n3 = new NodeMultiplyRightWithMatrix(&this->w2);
-    this->n4 = new NodeElementWiseSigmoidFunction;
+    this->n4 = new NodeElementWiseSigmoidFunction();
     this->n5 = new NodeMultiplyRightWithMatrix(&this->w3);
     this->n6 = new NodeElementWiseSigmoidFunction();
     this->n7 = new NodeBinaryCrossEntropy();
