@@ -10,7 +10,9 @@ public:
     unsigned int cols, rows;
     double *data;
     bool guarded;
-    Tensor(unsigned int rows, unsigned int cols);
+    unsigned int size(void);
+    void copy_data_from_other_tensor(Tensor *src);
+    Tensor(unsigned int rows, unsigned int cols, bool reserve_memory);
 };
 
 

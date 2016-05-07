@@ -7,9 +7,5 @@ Evaluate flow graphs and compute their gradients. Many methods can be implemente
 ## Install Eigen and compile the example code
 - Install Eigen system-wide (Arch Linux: "pacman -S eigen" or manually following the instructions at Eigen website)
 - cd /to/tinygrad/repository/folder
-- mkdir build
-- cd build
-- cmake "Unix Makefiles" ..
-- make
-- cd build
-- ./tinygrad
+- chmod +x build.sh
+- ./build.sh

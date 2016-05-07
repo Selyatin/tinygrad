@@ -9,7 +9,7 @@
 #include "dataset.h"
 
 int main(int argc, char **argv) {
-    std::cout << "Evaluating a test implementation of a neural network with two hidden layers" << std::endl;
+    std::cout << "Evaluating a test implementation of a logistic regression" << std::endl;
 
     double learning_rate = argc > 1 ? atof(argv[1]) : 0.05;
     std::string dataset_filename = argc > 2 ? argv[2] : "dataset.txt";
@@ -25,8 +25,7 @@ int main(int argc, char **argv) {
     std::cout << "learning rate: " << learning_rate << std::endl;
 
     // Learn a mapping f: R^d -> R
-    //ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers clf(n_features, 2, 2);
-    ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer clf(n_features, 3);
+    ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers clf(n_features, 2, 2);
 
     // Create a tensor for holding the input values (a matrix with n_features elements, R^d)
     Tensor *input = create_guarded_tensor_with_random_elements(1, n_features, -2.0, 2.0);
@@ -34,10 +33,11 @@ int main(int argc, char **argv) {
     // Create a tensor for holding the target values (a matrix with one element, R)
     Tensor *target = create_guarded_tensor_with_random_elements(1, 1, 0.0, 1.0);
     target->data = new double[1];
-    clf.n5->update_target(target);
+    clf.n7->update_target(target);
 
     while(epochs > 0) {
         double correct_classifications = 0.0;
+        ds.random_swap(ds.records); // Not exactly shuffling but at least some perturbation into example ordering
 
         // Read input (x) and target label (y) for classification (two classes).
         for(int example_index=0; example_index<ds.records; example_index++){

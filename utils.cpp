@@ -10,9 +10,14 @@ double fRand_(double fMin, double fMax){
 }
 
 Tensor* copy_eigen_matrix_to_new_tensor(unsigned int h, unsigned int w, double *s){
-    Tensor *t_new = new Tensor(h, w);
-    t_new->data = new double[h*w];
-    memcpy(t_new->data, s, sizeof(double)*h*w);
+    Tensor *t_new = new Tensor(h, w, true);
+    memcpy(t_new->data, s, sizeof(double)*t_new->size());
+    return t_new;
+}
+
+Tensor* copy_tensor(Tensor *src){
+    Tensor *t_new = new Tensor(src->rows, src->cols, true);
+    memcpy(t_new->data, src->data, sizeof(double)*src->size());
     return t_new;
 }
 
@@ -28,10 +33,9 @@ void print_tensor_as_eigen_matrix(Tensor *t, bool newline){
 }
 
 Tensor* create_guarded_tensor_with_random_elements(unsigned int h, unsigned int w, double low, double high){
-    Tensor *t = new Tensor(h, w);
+    Tensor *t = new Tensor(h, w, true);
     t->guarded = true;
-    t->data = new double[h*w];
-    for(int i=0;i < h*w; i++){
+    for(int i=0;i < t->size(); i++){
         t->data[i] = fRand_(low, high);
     }
     return t;

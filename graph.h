@@ -11,7 +11,6 @@ class Graph {
 private:
     std::vector<Node*> nodes;
     std::vector<std::pair<Node*, Node*>> traverse;
-    unsigned int available_identifier;
 public:
     Node* get_input_node(void);
     Node* get_output_node(void);

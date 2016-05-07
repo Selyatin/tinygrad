@@ -28,7 +28,7 @@ public:
     std::vector<Node*> out;
     std::string name;
     virtual void calculate_value(void);
-    virtual void calculate_gradient(bool last);
+    virtual void calculate_gradient(bool target);
     unsigned int count_inputs(void);
     void connect_to(Node *);
     Node(void);

@@ -61,4 +61,27 @@ public:
     ~ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer(void);
 };
 
+class ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers {
+private:
+    Tensor w1;
+    Tensor w2;
+    Tensor w3;
+public:
+    Graph g;
+    NodeMultiplyRightWithMatrix *n1;
+    NodeElementWiseSigmoidFunction *n2;
+    NodeMultiplyRightWithMatrix *n3;
+    NodeElementWiseSigmoidFunction *n4;
+    NodeMultiplyRightWithMatrix *n5;
+    NodeElementWiseSigmoidFunction *n6;
+    NodeBinaryCrossEntropy *n7;
+    unsigned int data_dimensionality;
+    unsigned int n_hidden1;
+    unsigned int n_hidden2;
+    Tensor* evaluate(Tensor*);
+    void sgd(Tensor *input, Tensor *target, double lr);
+    ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers(unsigned int data_dimensionality, unsigned int n_hidden1, unsigned int n_hidden2);
+    ~ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers(void);
+};
+
 #endif //TINYGRAD_MODELS_H

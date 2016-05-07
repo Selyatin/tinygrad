@@ -8,7 +8,6 @@
 
 Graph::Graph(void){
     this->nodes.clear();
-    this->available_identifier = 0;
 }
 
 void Graph::print_contents(void) {
@@ -149,6 +148,10 @@ Tensor* Graph::forward(Tensor *input, Node *a, Node *b){
 
         s->in.pop_back();
         initial.out.clear();
+    }
+
+    if (b->output.size() == 0){
+        throw std::invalid_argument("[Graph::forward] The output node did not compute anything. Maybe the output node is not connected to the input node?");
     }
 
     Tensor *value = b->output[0];
