@@ -9,10 +9,33 @@ Tensor::Tensor(unsigned int rows, unsigned int cols, bool reserve_memory) {
     this->cols = cols;
     this->rows = rows;
     this->guarded = false;
+    this->gradient = nullptr; // Store the chain rule of gradients with respect to this tensor.
     if (!reserve_memory)
         this->data = nullptr;
-    else
+    else {
         this->data = new double[this->size()];
+        for(int i=0;i<this->size();i++)
+            this->data[i] = 0.0;
+    }
+}
+
+Tensor::~Tensor(void){
+    this->free_contents();
+}
+
+void Tensor::free_contents(void){
+    if (this->data != nullptr){
+        delete[] this->data;
+        this->data = nullptr;
+    }
+    if (this->gradient != nullptr){
+        if (this->gradient->data != nullptr){
+            delete[] this->gradient->data;
+            this->gradient->data = nullptr;
+        }
+        delete this->gradient;
+        this->gradient = nullptr;
+    }
 }
 
 unsigned int Tensor::size(void){

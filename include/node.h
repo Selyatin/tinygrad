@@ -21,17 +21,21 @@ public:
      *  1: matrix multiplication
      */
     unsigned char grad_type;
-    std::vector<Tensor*> grad;
-    std::vector<Tensor*> buffer;
-    std::vector<Tensor*> output;
-    std::vector<Node*> in;
-    std::vector<Node*> out;
+    Tensor *buffer;
+    Tensor *output;
+    Node* in;
+    Node* out;
     std::string name;
+    void free_buffer_gradient_tensor(void);
+    void free_output_tensor(void);
+    void free_buffer_tensor(void);
     virtual void calculate_value(void);
-    virtual void calculate_gradient(bool target);
-    unsigned int count_inputs(void);
+    virtual void calculate_gradient(void);
+    virtual void combine_upper_gradient(Tensor *upper_gradient);
+    void combine_gradient_tensors_to_lower(Tensor *upper, Tensor *lower, Tensor *lower_gradient_shape);
     void connect_to(Node *);
     Node(void);
+    ~Node(void);
 };
 
 

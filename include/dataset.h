@@ -13,6 +13,7 @@ public:
     unsigned int features;
     double *x;
     double *y;
+    void normalize(void);
     void read_csv(std::string filename);
     void random_swap(unsigned int how_many);
     Dataset(void);

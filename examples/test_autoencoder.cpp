@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
 
     // Create a tensor for holding the target values (a matrix with n_features element, R^d)
     Tensor *target = create_guarded_tensor_with_random_elements(1, n_features, 0.0, 1.0);
-    target->data = new double[n_features];
     ae.n4->update_target(target);
 
     while(epochs > 0) {
@@ -56,15 +55,15 @@ int main(int argc, char **argv) {
             // Evaluate a given input
             Tensor *result = ae.evaluate(input);
 
-            // Compute stochastic gradient descend with a given learning rate
-            ae.sgd(input, target, learning_rate);
-
             // Add the absolute reconstruction error of the current training example
             double are = 0.0;
             for(int feature=0; feature<ds.features; feature++){
                 are = are + fabs(input->data[feature] - result->data[feature]);
             }
             avg_are = avg_are + are / (double)n_features;
+
+            // Compute stochastic gradient descend with a given learning rate
+            ae.sgd(input, target, learning_rate);
         }
 
         // Compute the mean absolute error
@@ -76,10 +75,10 @@ int main(int argc, char **argv) {
         epochs--;
     }
 
-    delete[] input->data;
-    delete input;
+    input->free_contents();
+    target->free_contents();
 
-    delete[] target->data;
+    delete input;
     delete target;
 
     return 0;

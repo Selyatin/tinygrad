@@ -4,30 +4,37 @@
 
 #include "nodeimplementations.h"
 #include "utils.h"
-#include "configuration.h"
+
+using namespace Eigen;
 
 /*
  * Compute a specified element-wise power for the elements of all tensors.
  */
 void NodeElementWisePower::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-        for(int j=0;j<this->buffer[i]->size();j++){
-            t_new->data[j] = pow(t_new->data[j], this->power);
-        }
-        this->output.push_back(t_new);
+    this->free_output_tensor();
+    Tensor *t_new = new Tensor(this->buffer->rows, this->buffer->cols, true);
+
+    //Tensor *t_new = copy_eigen_matrix_to_new_tensor(nullptr, this->buffer->rows, this->buffer->cols, this->buffer->data);
+
+    for(int j=0;j<this->buffer->size();j++){
+        t_new->data[j] = pow(this->buffer->data[j], this->power);
     }
+
+    this->output = t_new;
 }
 
-void NodeElementWisePower::calculate_gradient(bool target){
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-        for(int j=0;j<this->buffer[i]->size();j++){
-            t_new->data[j] = this->power * pow(t_new->data[j], this->power - 1.0);
-        }
-        this->grad.push_back(t_new);
-    }
+void NodeElementWisePower::calculate_gradient(void){
+    Tensor *current = this->buffer;
+
+    if (current->gradient == nullptr)
+        current->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
+
+    for(int j=0;j<current->gradient->size();j++)
+        current->gradient->data[j] = this->power * pow(current->data[j], this->power - 1.0);
+}
+
+void NodeElementWisePower::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
 }
 
 NodeElementWisePower::NodeElementWisePower(double power) : Node() {
@@ -36,99 +43,29 @@ NodeElementWisePower::NodeElementWisePower(double power) : Node() {
 }
 
 /*
- * Sum the values of all elements of all tensors into a single scalar.
- */
-void NodeSumAllTensorElements::calculate_value(void){
-    this->output.clear();
-    double total = 0.0;
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd m = Eigen::Map<Eigen::MatrixXd>(t->data, t->rows, t->cols);
-        total = total + m.sum();
-    }
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(1, 1, new double[1]);
-    *t_new->data = total;
-    this->output.push_back(t_new);
-}
-
-void NodeSumAllTensorElements::calculate_gradient(bool target){
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd m = Eigen::MatrixXd::Constant(t->rows, t->cols, 1.0);
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-        this->grad.push_back(t_new);
-    }
-}
-
-NodeSumAllTensorElements::NodeSumAllTensorElements(void){
-    this->name = "NodeSumAllTensorElements";
-}
-
-/*
- * Add a constant to the elements of all tensors.
- */
-void NodeElementWiseAddConstant::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd m = Eigen::Map<Eigen::MatrixXd>(t->data, t->rows, t->cols);
-        Eigen::MatrixXd ms = Eigen::MatrixXd::Constant(t->rows, t->cols, this->addition);
-        m = m + ms;
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-        this->output.push_back(t_new);
-    }
-}
-
-void NodeElementWiseAddConstant::calculate_gradient(bool target){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd ms = Eigen::MatrixXd::Constant(t->rows, t->cols, 1.0);
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, ms.data());
-        this->grad.push_back(t_new);
-    }
-}
-
-NodeElementWiseAddConstant::NodeElementWiseAddConstant(double addition) : Node() {
-    this->addition = addition;
-    this->name = "NodeElementWiseAddConstant";
-}
-
-/*
  * Compute the sigmoid/logistic function element-wise for the elements of the all tensors.
  */
 void NodeElementWiseSigmoidFunction::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-
-#ifdef TG_DEBUG_MODE
-        std::cout << "[NodeElementWiseSigmoidFunction::calculate_value] input:";
-        print_tensor_as_eigen_matrix(t_new, true);
-#endif
-
-        for(int j=0;j<this->buffer[i]->size();j++){
-            t_new->data[j] = 1.0 / (1.0 + exp((-1.0)*t_new->data[j]));
-        }
-
-#ifdef TG_DEBUG_MODE
-        std::cout << "[NodeElementWiseSigmoidFunction::calculate_value] output:";
-        print_tensor_as_eigen_matrix(t_new, true);
-#endif
-
-        this->output.push_back(t_new);
+    this->free_output_tensor();
+    this->output = new Tensor(this->buffer->rows, this->buffer->cols, true);
+    for(int j=0;j<this->buffer->size();j++){
+        this->output->data[j] = 1.0 / (1.0 + exp((-1.0)*this->buffer->data[j]));
     }
 }
 
-void NodeElementWiseSigmoidFunction::calculate_gradient(bool target){
-    for(int i=0;i<this->output.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->output[i]->rows, this->output[i]->cols, this->output[i]->data);
-        for(int j=0;j<this->output[i]->size();j++){
-            t_new->data[j] = t_new->data[j] * (1.0 - t_new->data[j]);
-        }
-        this->grad.push_back(t_new);
+void NodeElementWiseSigmoidFunction::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
+    Tensor *current_buffer = this->buffer;
+    Tensor *current_output = this->output;
+    current_buffer->gradient = new Tensor(current_buffer->rows, current_buffer->cols, true);
+
+    for(int j=0;j<current_output->size();j++){
+        current_buffer->gradient->data[j] = current_output->data[j] * (1.0 - current_output->data[j]);
     }
+}
+
+void NodeElementWiseSigmoidFunction::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
 }
 
 NodeElementWiseSigmoidFunction::NodeElementWiseSigmoidFunction(void){
@@ -136,57 +73,32 @@ NodeElementWiseSigmoidFunction::NodeElementWiseSigmoidFunction(void){
 }
 
 /*
- * Multiply the elements of all tensors by a constant value.
- */
-void NodeElementWiseConstantMultiply::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd m = Eigen::Map<Eigen::MatrixXd>(t->data, t->rows, t->cols);
-        m = m * this->multiple;
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-        this->output.push_back(t_new);
-    }
-}
-
-void NodeElementWiseConstantMultiply::calculate_gradient(bool target){
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t = this->buffer[i];
-        Eigen::MatrixXd m = Eigen::MatrixXd::Constant(t->rows, t->cols, this->multiple);
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m.data());
-        this->grad.push_back(t_new);
-    }
-}
-
-NodeElementWiseConstantMultiply::NodeElementWiseConstantMultiply(double multiple) {
-    this->multiple = multiple;
-    this->name = "NodeElementWiseConstantMultiply";
-}
-
-/*
  * Compute the logarithm element-wise the elements of a tensor.
  */
 void NodeElementWiseLog::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-        for(int j=0;j<this->buffer[i]->size();j++){
-            if (t_new->data[j] < 0.0)
-                throw std::invalid_argument("Logarithm of a negative real value is not defined.");
-            t_new->data[j] = log(t_new->data[j]);
-        }
-        this->output.push_back(t_new);
+    this->free_output_tensor();
+
+    //Tensor *t_new = copy_eigen_matrix_to_new_tensor(nullptr, this->buffer->rows, this->buffer->cols, this->buffer->data);
+    Tensor *o = new Tensor(this->buffer->rows, this->buffer->cols, true);
+
+    for(int j=0;j<this->buffer->size();j++){
+        if (this->buffer->data[j] < 0.0)
+            throw std::invalid_argument("Logarithm of a negative real value is not defined.");
+        o->data[j] = log(this->buffer->data[j]);
     }
+    this->output = o;
 }
 
-void NodeElementWiseLog::calculate_gradient(bool target){
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-        for(int j=0;j<this->buffer[i]->size();j++){
-            t_new->data[j] = 1.0 / t_new->data[j];
-        }
-        this->grad.push_back(t_new);
-    }
+void NodeElementWiseLog::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
+    this->buffer->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
+
+    for(int j=0;j<this->buffer->size();j++)
+        this->buffer->gradient->data[j] = 1.0 / this->buffer->data[j];
+}
+
+void NodeElementWiseLog::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
 }
 
 NodeElementWiseLog::NodeElementWiseLog(void){
@@ -194,59 +106,50 @@ NodeElementWiseLog::NodeElementWiseLog(void){
 }
 
 /*
- * Identity operator
- */
-void NodeIdentity::calculate_value(void){
-    this->output.clear();
-    for(int i=0;i<this->buffer.size();i++){
-        Tensor *t_new = copy_eigen_matrix_to_new_tensor(this->buffer[i]->rows, this->buffer[i]->cols, this->buffer[i]->data);
-        this->output.push_back(t_new);
-    }
-}
-
-void NodeIdentity::calculate_gradient(bool target){
-    Tensor *t1 = this->buffer[0];
-    unsigned int h=t1->rows, w=t1->cols;
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(h, w, 1.0);
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(h, w, m.data());
-    this->grad.push_back(t_new);
-}
-
-NodeIdentity::NodeIdentity(void){
-    this->name = "NodeIdentity";
-}
-
-/*
  * Multiply one matrix with a given matrix
  */
 void NodeMultiplyRightWithMatrix::calculate_value(void){
-    if (this->buffer.size() != 1)
-        throw std::invalid_argument("NodeMultiplyWithMatrix: the number of matrices in buffer is not one.");
+    this->free_output_tensor();
 
-    this->output.clear();
-    Tensor *t = this->buffer[0];
-    unsigned int h1=t->rows, w1=t->cols, h2=this->mulmat->rows, w2=this->mulmat->cols;
+    unsigned int h1=this->buffer->rows, w1=this->buffer->cols, h2=this->mulmat->rows, w2=this->mulmat->cols;
 
     if (w1 != h2)
         throw std::invalid_argument("NodeMultiplyWithMatrix: the matrix dimensions do not match for multiply.");
 
-    Eigen::MatrixXd m1 = Eigen::Map<Eigen::MatrixXd>(t->data, h1, w1);
-    Eigen::MatrixXd m2 = Eigen::Map<Eigen::MatrixXd>(this->mulmat->data, h2, w2);
-    Eigen::MatrixXd m3 = m1 * m2;
+    MatrixXd m1 = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->buffer->data, h1, w1);
+    MatrixXd m2 = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->mulmat->data, h2, w2);
+    MatrixXd m3 = m1 * m2;
 
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(h1, w2, m3.data());
+    //Tensor *t_new = copy_eigen_matrix_to_new_tensor(nullptr, h1, w2, m3.data());
+    Tensor *o = new Tensor(h1, w2, true);
+    memcpy(o->data, m3.data(), sizeof(double) * o->size());
 
-    this->output.push_back(t_new);
+    this->output = o;
 }
 
-void NodeMultiplyRightWithMatrix::calculate_gradient(bool target){
-    Tensor *t1 = target ? this->buffer[0] : this->mulmat;
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t1->rows, t1->cols, t1->data);
-    this->grad.push_back(t_new);
+void NodeMultiplyRightWithMatrix::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
+
+    this->buffer->gradient = new Tensor(this->mulmat->rows, this->mulmat->cols, true);
+    memcpy(this->buffer->gradient->data, this->mulmat->data, sizeof(double) * this->mulmat->size());
+
+    if (this->mulmat->gradient != nullptr){
+        this->mulmat->gradient->free_contents();
+        delete this->mulmat->gradient;
+        this->mulmat->gradient = nullptr;
+    }
+
+    this->mulmat->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
+    memcpy(this->mulmat->gradient->data, this->buffer->data, sizeof(double) * this->buffer->size());
 }
 
 void NodeMultiplyRightWithMatrix::update_matrix(Tensor *t){
     this->mulmat = t;
+}
+
+void NodeMultiplyRightWithMatrix::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->mulmat->gradient, this->mulmat);
 }
 
 NodeMultiplyRightWithMatrix::NodeMultiplyRightWithMatrix(Tensor *t){
@@ -256,78 +159,99 @@ NodeMultiplyRightWithMatrix::NodeMultiplyRightWithMatrix(Tensor *t){
 }
 
 /*
- * Transpose a matrix
+ * Add a tensor into the input tensor.
  */
-void NodeTransposeMatrix::calculate_value(void){
-    if (this->buffer.size() != 1)
-        throw std::invalid_argument("NodeMultiplyTwoMatrices: the number of matrices in buffer is not one.");
+void NodeAddTensor::calculate_value(void){
+    this->free_output_tensor();
+    unsigned int h1=this->buffer->rows, w1=this->buffer->cols, h2=this->addition->rows, w2=this->addition->cols;
 
-    this->output.clear();
-    Tensor *t1 = this->buffer[0];
-    unsigned int h=t1->rows, w=t1->cols;
+    if (h1 != h2 || w1 != w2)
+        throw std::invalid_argument("NodeAddTensor: the matrix dimensions do not match for addition.");
 
-    Eigen::MatrixXd m = Eigen::Map<Eigen::MatrixXd>(t1->data, h, w);
-    Eigen::MatrixXd mt = m.transpose();
+    MatrixXd m1 = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->buffer->data, h1, w1);
+    MatrixXd m2 = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->addition->data, h2, w2);
+    MatrixXd m3 = m1 + m2;
 
-    // Note that the matrix dimensions change
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(w, h, mt.data());
+    Tensor *o = new Tensor(h1, w2, true);
+    memcpy(o->data, m3.data(), sizeof(double) * o->size());
 
-    this->output.push_back(t_new);
+    this->output = o;
 }
 
-void NodeTransposeMatrix::calculate_gradient(bool target){
-    Tensor *t1 = this->output[0];
-    unsigned int h=t1->rows, w=t1->cols;
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(h, w, 1.0);
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(h, w, m.data());
-    this->grad.push_back(t_new);
+void NodeAddTensor::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
+
+    this->buffer->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
+    for(int i=0;i<this->buffer->gradient->size();i++)
+        this->buffer->gradient->data[i] = 1.0;
+
+    if (this->addition->gradient != nullptr) {
+        this->addition->gradient->free_contents();
+        delete this->addition->gradient;
+        this->addition->gradient = nullptr;
+    }
+
+    this->addition->gradient = new Tensor(this->addition->rows, this->addition->cols, true);
+    for(int i=0;i<this->addition->gradient->size();i++)
+        this->addition->gradient->data[i] = 1.0;
 }
 
-NodeTransposeMatrix::NodeTransposeMatrix(void){
-    this->name = "NodeTransposeMatrix";
+void NodeAddTensor::update_matrix(Tensor *t){
+    this->addition = t;
+}
+
+void NodeAddTensor::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->addition->gradient, this->addition);
+}
+
+NodeAddTensor::NodeAddTensor(Tensor *t){
+    this->addition = t;
+    this->grad_type = 0;
+    this->name = "NodeAddTensor";
 }
 
 /*
  * Compute the squared error between a real value and a target real value
  */
 void NodeSquaredError::calculate_value(void){
-    this->output.clear();
+    this->free_output_tensor();
     if (this->target == nullptr)
         throw std::invalid_argument("[NodeSquaredError] the target tensor is not set!");
 
-    if (this->buffer.size() != 1) {
-        throw std::invalid_argument("[NodeSquaredError] the number of buffered tensors is not one.");
-    }
-
-    if (this->target->rows != this->buffer[0]->rows || this->target->cols != this->buffer[0]->cols){
+    if (this->target->rows != this->buffer->rows || this->target->cols != this->buffer->cols){
         throw std::invalid_argument("[NodeSquaredError] the dimensions between the input and target do not match.");
     }
 
-    Eigen::MatrixXd m_y = Eigen::Map<Eigen::MatrixXd>(this->target->data, this->target->rows, this->target->cols);
-    Eigen::MatrixXd m_yhat = Eigen::Map<Eigen::MatrixXd>(this->buffer[0]->data, this->buffer[0]->rows, this->buffer[0]->cols);
-    Eigen::MatrixXd m_diff = m_y - m_yhat;
+    MatrixXd m_y = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->target->data, this->target->rows, this->target->cols);
+    MatrixXd m_yhat = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->buffer->data, this->buffer->rows, this->buffer->cols);
+    MatrixXd m_diff = m_y - m_yhat;
 
     double difference = m_diff.norm();
 
-    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(1, 1, 0.0);
-    m << difference;
+    Tensor *o = new Tensor(1, 1, true);
+    o->data[0] = difference;
 
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(1, 1, m.data());
-    this->output.push_back(t_new);
+    this->output = o;
 }
 
-void NodeSquaredError::calculate_gradient(bool target){
-    Tensor *t = this->buffer[0];
-    Eigen::MatrixXd m_y = Eigen::Map<Eigen::MatrixXd>(this->target->data, this->target->rows, this->target->cols);
-    Eigen::MatrixXd m_yhat = Eigen::Map<Eigen::MatrixXd>(t->data, t->rows, t->cols);
-    Eigen::MatrixXd m_grad = m_yhat - m_y;
+void NodeSquaredError::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
 
-    Tensor *t_new = copy_eigen_matrix_to_new_tensor(t->rows, t->cols, m_grad.data());
-    this->grad.push_back(t_new);
+    MatrixXd m_y = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->target->data, this->target->rows, this->target->cols);
+    MatrixXd m_yhat = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->buffer->data, this->buffer->rows, this->buffer->cols);
+    MatrixXd m_grad = m_yhat - m_y;
+
+    this->buffer->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
+    memcpy(this->buffer->gradient->data, m_grad.data(), sizeof(double) * this->buffer->gradient->size());
 }
 
 void NodeSquaredError::update_target(Tensor *target){
     this->target = target;
+}
+
+void NodeSquaredError::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
 }
 
 NodeSquaredError::NodeSquaredError(void) {
@@ -340,59 +264,39 @@ NodeSquaredError::NodeSquaredError(void) {
  * Compute the cross entropy loss between a real value and a target real value
  */
 void NodeBinaryCrossEntropy::calculate_value(void){
-    this->output.clear();
-    if (this->buffer.size() != 1)
-        throw std::invalid_argument("[NodeBinaryCrossEntropy] the number of buffered tensors is not one.");
+    this->free_output_tensor();
 
     Tensor *y_target = this->target;
-    Tensor *y_input = this->buffer[0];
+    Tensor *y_input = this->buffer;
 
     if (y_target->rows != y_input->rows || y_target->cols != y_input->cols)
         throw std::invalid_argument("[NodeBinaryCrossEntropy] dimension mismatch between y and yhat.");
 
     Tensor *y_crossentropy = new Tensor(y_target->rows, y_target->cols, true);
 
-    for(int i=0;i<y_target->rows*y_target->cols;i++){
+    for(int i=0;i<y_target->size();i++){
         y_crossentropy->data[i] = (-1.0) * (this->target->data[i]*log(y_input->data[i]) + (1.0-this->target->data[i])*log(1.0-y_input->data[i]));
     }
 
-#ifdef TG_DEBUG_MODE
-    std::cout << "[NodeBinaryCrossEntropy " << this << "]::calculate_value input=";
-    print_tensor_as_eigen_matrix(y_input, true);
-    std::cout << "[NodeBinaryCrossEntropy " << this << "]::calculate_value y_crossentropy=";
-    print_tensor_as_eigen_matrix(y_crossentropy, true);
-#endif
-
-    this->output.push_back(y_crossentropy);
+    this->output = y_crossentropy;
 }
 
-void NodeBinaryCrossEntropy::calculate_gradient(bool target){
-    Tensor *y_target = this->target;
-    Tensor *y_input = this->buffer[0];
+void NodeBinaryCrossEntropy::calculate_gradient(void){
+    this->free_buffer_gradient_tensor();
 
-    if (y_target->rows != y_input->rows || y_target->cols != y_input->cols)
-        throw std::invalid_argument("[NodeBinaryCrossEntropy] dimension mismatch between y and yhat.");
+    this->buffer->gradient = new Tensor(this->buffer->rows, this->buffer->cols, true);
 
-    Tensor *y_crossentropy_derivative = new Tensor(y_target->rows, y_target->cols, true);
-
-    for(int i=0;i<y_target->rows*y_target->cols;i++){
-        y_crossentropy_derivative->data[i] = (((1.0 - y_target->data[i]) / (1.0 - y_input->data[i])) - (y_target->data[i] / y_input->data[i]));
+    for(int i=0;i<this->target->size();i++){
+        this->buffer->gradient->data[i] = (((1.0 - this->target->data[i]) / (1.0 - this->buffer->data[i])) - (this->target->data[i] / this->buffer->data[i]));
     }
-
-#ifdef TG_DEBUG_MODE
-    std::cout << "[NodeBinaryCrossEntropy]::calculate_gradient y_target: ";
-    print_tensor_as_eigen_matrix(y_target, true);
-    std::cout << "[NodeBinaryCrossEntropy]::calculate_gradient y_input: ";
-    print_tensor_as_eigen_matrix(y_input, true);
-    std::cout << "[NodeBinaryCrossEntropy]::calculate_gradient y_crossentropy_derivative: ";
-    print_tensor_as_eigen_matrix(y_crossentropy_derivative, true);
-#endif
-
-    this->grad.push_back(y_crossentropy_derivative);
 }
 
 void NodeBinaryCrossEntropy::update_target(Tensor *target){
     this->target = target;
+}
+
+void NodeBinaryCrossEntropy::combine_upper_gradient(Tensor *upper_gradient) {
+    this->combine_gradient_tensors_to_lower(upper_gradient, this->buffer->gradient, this->buffer);
 }
 
 NodeBinaryCrossEntropy::NodeBinaryCrossEntropy(void) {

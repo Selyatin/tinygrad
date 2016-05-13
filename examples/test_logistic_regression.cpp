@@ -25,15 +25,14 @@ int main(int argc, char **argv) {
     std::cout << "learning rate: " << learning_rate << std::endl;
 
     // Learn a mapping f: R^d -> R
-    ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers clf(n_features, 2, 2);
+    ClassifierLogisticRegression clf(n_features);
 
     // Create a tensor for holding the input values (a matrix with n_features elements, R^d)
     Tensor *input = create_guarded_tensor_with_random_elements(1, n_features, -2.0, 2.0);
 
     // Create a tensor for holding the target values (a matrix with one element, R)
     Tensor *target = create_guarded_tensor_with_random_elements(1, 1, 0.0, 1.0);
-    target->data = new double[1];
-    clf.n7->update_target(target);
+    clf.n4->update_target(target);
 
     while(epochs > 0) {
         double correct_classifications = 0.0;
@@ -67,10 +66,10 @@ int main(int argc, char **argv) {
         epochs--;
     }
 
-    delete[] input->data;
-    delete input;
+    input->free_contents();
+    target->free_contents();
 
-    delete[] target->data;
+    delete input;
     delete target;
 
     return 0;

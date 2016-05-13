@@ -7,12 +7,14 @@
 
 #include "tensor.h"
 #include <iostream>
+#include <string>
 #include <Eigen/Core>
 
-double fRand_(double fMin, double fMax);
+double random_double(double fMin, double fMax);
 void print_tensor_as_eigen_matrix(Tensor *t, bool newline);
-Tensor* copy_eigen_matrix_to_new_tensor(unsigned int, unsigned int, double*);
+//Tensor* copy_eigen_matrix_to_new_tensor(Tensor *tgt, unsigned int, unsigned int, double*);
 Tensor* create_guarded_tensor_with_random_elements(unsigned int h, unsigned int w, double low, double high);
-Tensor* copy_tensor(Tensor *src);
+//Tensor* copy_or_fill_tensor(Tensor *tgt, Tensor *src);
+void describe_tensor(Tensor*, const std::string);
 
 #endif //TINYGRAD_UTILS_H

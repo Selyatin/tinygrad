@@ -9,37 +9,13 @@
 #include <iostream>
 #include "node.h"
 
-
-
-class NodeElementWiseAddConstant : public Node{
-private:
-    double addition;
-public:
-    void calculate_value(void);
-    void calculate_gradient(bool last);
-    NodeElementWiseAddConstant(double);
-};
-
-class NodeSumAllTensorElements : public Node{
-public:
-    void calculate_value(void);
-    void calculate_gradient(bool last);
-    NodeSumAllTensorElements(void);
-};
-
-class NodeTransposeMatrix : public Node{
-public:
-    void calculate_value(void);
-    void calculate_gradient(bool last);
-    NodeTransposeMatrix(void);
-};
-
 class NodeMultiplyRightWithMatrix : public Node{
 public:
     Tensor *mulmat;
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
     void update_matrix(Tensor *);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeMultiplyRightWithMatrix(Tensor*);
 };
 
@@ -48,38 +24,35 @@ private:
     double power;
 public:
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeElementWisePower(double);
 };
 
 class NodeElementWiseSigmoidFunction : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeElementWiseSigmoidFunction(void);
 };
 
 class NodeElementWiseLog : public Node{
 public:
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeElementWiseLog(void);
 };
 
-class NodeIdentity : public Node{
+class NodeAddTensor : public Node{
 public:
+    Tensor *addition;
     void calculate_value(void);
-    void calculate_gradient(bool last);
-    NodeIdentity(void);
-};
-
-class NodeElementWiseConstantMultiply : public Node{
-private:
-    double multiple;
-public:
-    void calculate_value(void);
-    void calculate_gradient(bool last);
-    NodeElementWiseConstantMultiply(double);
+    void calculate_gradient(void);
+    void update_matrix(Tensor *);
+    void combine_upper_gradient(Tensor *upper_gradient);
+    NodeAddTensor(Tensor*);
 };
 
 class NodeSquaredError : public Node{
@@ -87,8 +60,9 @@ private:
     Tensor *target;
 public:
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
     void update_target(Tensor*);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeSquaredError(void);
 };
 
@@ -97,8 +71,9 @@ private:
     Tensor *target;
 public:
     void calculate_value(void);
-    void calculate_gradient(bool last);
+    void calculate_gradient(void);
     void update_target(Tensor*);
+    void combine_upper_gradient(Tensor *upper_gradient);
     NodeBinaryCrossEntropy(void);
 };
 

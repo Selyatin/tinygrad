@@ -12,11 +12,13 @@
 class ClassifierLogisticRegression {
 private:
     Tensor weights;
+    Tensor biases;
 public:
     Graph g;
     NodeMultiplyRightWithMatrix *n1;
-    NodeElementWiseSigmoidFunction *n2;
-    NodeBinaryCrossEntropy *n3;
+    NodeAddTensor *n2;
+    NodeElementWiseSigmoidFunction *n3;
+    NodeBinaryCrossEntropy *n4;
     unsigned int data_dimensionality;
     Tensor* evaluate(Tensor* input);
     void sgd(Tensor *input, Tensor* target, double lr);
@@ -46,13 +48,17 @@ class ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer {
 private:
     Tensor w1;
     Tensor w2;
+    Tensor b1;
+    Tensor b2;
 public:
     Graph g;
     NodeMultiplyRightWithMatrix *n1;
-    NodeElementWiseSigmoidFunction *n2;
-    NodeMultiplyRightWithMatrix *n3;
-    NodeElementWiseSigmoidFunction *n4;
-    NodeBinaryCrossEntropy *n5;
+    NodeAddTensor *n2;
+    NodeElementWiseSigmoidFunction *n3;
+    NodeMultiplyRightWithMatrix *n4;
+    NodeAddTensor *n5;
+    NodeElementWiseSigmoidFunction *n6;
+    NodeBinaryCrossEntropy *n7;
     unsigned int data_dimensionality;
     unsigned int n_hidden;
     Tensor* evaluate(Tensor*);

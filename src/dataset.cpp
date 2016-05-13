@@ -6,6 +6,9 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <Eigen/Core>
+
+using namespace Eigen;
 
 Dataset::Dataset(void) {
     this->features = 0;
@@ -19,6 +22,13 @@ Dataset::~Dataset(void){
         delete[] this->x;
     if (this->y != nullptr)
         delete[] this->y;
+}
+
+void Dataset::normalize(void){
+    MatrixXd m = Map<Matrix<double,Dynamic,Dynamic,RowMajor> >(this->x,this->records,this->features);
+    RowVectorXd mean = m.colwise().mean();
+    RowVectorXd var = (m.rowwise() - mean).array().square().colwise().mean().sqrt();
+    m = (m.rowwise() - mean).array().rowwise() / var.array();
 }
 
 void Dataset::read_csv(std::string filename){
@@ -46,14 +56,13 @@ void Dataset::read_csv(std::string filename){
         int feature_index = 0;
         while(std::getline(ss, value, ',')){
             if (feature_index < this->features)
-                this->x[index*this->features + feature_index] = std::stod(value);
+                this->x[index * this->features + feature_index] = std::stod(value);
             else
                 this->y[index] = std::stod(value);
             feature_index++;
         }
         index++;
     }
-
 }
 
 void Dataset::random_swap(unsigned int how_many){
