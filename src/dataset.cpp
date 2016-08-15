@@ -1,7 +1,3 @@
-//
-// Created by niko on 4/26/16.
-//
-
 #include "dataset.h"
 #include <sstream>
 #include <fstream>

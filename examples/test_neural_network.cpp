@@ -5,7 +5,7 @@
 #include <iostream>
 #include "node.h"
 #include "utils.h"
-#include "models.h"
+#include "predefined_models.h"
 #include "dataset.h"
 
 int main(int argc, char **argv) {
@@ -28,11 +28,11 @@ int main(int argc, char **argv) {
     // Learn a mapping f: R^d -> R
     ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer clf(n_features, 12);
 
-    // Create a tensor for holding the input values (a matrix with n_features elements, R^d)
-    Tensor *input = create_guarded_tensor_with_random_elements(1, n_features, -2.0, 2.0);
+    // Create a TGMatrix for holding the input values (a matrix with n_features elements, R^d)
+    TGMatrix *input = create_guarded_TGMatrix_with_random_elements(1, n_features, -2.0, 2.0);
 
-    // Create a tensor for holding the target values (a matrix with one element, R)
-    Tensor *target = create_guarded_tensor_with_random_elements(1, 1, 0.0, 1.0);
+    // Create a TGMatrix for holding the target values (a matrix with one element, R)
+    TGMatrix *target = create_guarded_TGMatrix_with_random_elements(1, 1, 0.0, 1.0);
     clf.n7->update_target(target);
 
     while(epochs > 0) {
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
             }
 
             // Evaluate a given input
-            Tensor *result = clf.evaluate(input);
+            TGMatrix *result = clf.evaluate(input);
 
             // Bookkeeping for computing the resulting accuracy
             if (result->data[0] > 0.5 && target->data[0] == 1.0)

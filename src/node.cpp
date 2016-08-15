@@ -1,11 +1,7 @@
-//
-// Created by niko on 4/17/16.
-//
-
 #include "node.h"
 #include "utils.h"
 
-void Node::combine_gradient_tensors_to_lower(Tensor *upper, Tensor *lower, Tensor *lower_gradient_shape){
+void Node::combine_gradient_TGMatrices_to_lower(TGMatrix *upper, TGMatrix *lower, TGMatrix *lower_gradient_shape){
     if (this->grad_type == 0){
         Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(lower->data, lower->rows, lower->cols);
         Eigen::MatrixXd m_tg = Eigen::MatrixXd::Constant(lower->rows, lower->cols, 0.0);
@@ -34,6 +30,7 @@ void Node::combine_gradient_tensors_to_lower(Tensor *upper, Tensor *lower, Tenso
         Eigen::MatrixXd m_ug = Eigen::Map<Eigen::MatrixXd>(upper->data, m_ug_h, m_ug_w);
         Eigen::MatrixXd m_lg = Eigen::Map<Eigen::MatrixXd>(lower->data, m_lg_h, m_lg_w);
 
+        // Dimensionality analysis to rotate the matrices correctly
         if (target_h == m_lg_h && target_w == m_ug_w && m_lg_w == m_ug_h){
             Eigen::MatrixXd m_tg = m_lg * m_ug;
             m_tg_acc = m_tg_acc + m_tg;
@@ -60,7 +57,7 @@ void Node::combine_gradient_tensors_to_lower(Tensor *upper, Tensor *lower, Tenso
 
 }
 
-void Node::combine_upper_gradient(Tensor *upper_gradient){
+void Node::combine_upper_gradient(TGMatrix *upper_gradient){
 
 }
 
@@ -70,7 +67,7 @@ void Node::calculate_value(void){
 void Node::calculate_gradient(void){
 }
 
-void Node::free_output_tensor(void){
+void Node::free_output_TGMatrix(void){
     if (this->output != nullptr) {
         this->output->free_contents();
         delete this->output;
@@ -78,7 +75,7 @@ void Node::free_output_tensor(void){
     }
 }
 
-void Node::free_buffer_tensor(void){
+void Node::free_buffer_TGMatrix(void){
     if (this->buffer != nullptr) {
         this->buffer->free_contents();
         delete this->buffer;
@@ -86,7 +83,7 @@ void Node::free_buffer_tensor(void){
     }
 }
 
-void Node::free_buffer_gradient_tensor(void){
+void Node::free_buffer_gradient_TGMatrix(void){
     if (this->buffer != nullptr){
         if (this->buffer->gradient != nullptr){
             this->buffer->gradient->free_contents();
@@ -113,6 +110,6 @@ Node::Node(void) {
 }
 
 Node::~Node(void){
-    this->free_buffer_tensor();
-    this->free_output_tensor();
+    this->free_buffer_TGMatrix();
+    this->free_output_TGMatrix();
 }

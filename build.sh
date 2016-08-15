@@ -4,7 +4,7 @@
 
 # Ad-hoc approach to test if the script is executed in the root folder of tinygrad.
 if [ ! -f "build.sh" ]; then
-    echo "Please execute the script in the tinygrad root folder."
+    echo "Please execute the script in the root of the tinygrad repository folder."
     exit 1
 fi
 
@@ -18,7 +18,7 @@ cd build
 cmake "Unix makefiles" ..
 
 if [ $? -nq 0 ]; then
-    echo "[tinygrad] CMake failed. Do you have a system-wide installation of Eigen?"
+    echo "[tinygrad] CMake failed. Have you installed Eigen system-wide?"
 fi
 
 # Make the project using the previously generated makefiles.

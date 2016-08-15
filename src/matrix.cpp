@@ -1,15 +1,11 @@
-//
-// Created by niko on 4/21/16.
-//
-
 #include <stdexcept>
-#include "tensor.h"
+#include "matrix.h"
 
-Tensor::Tensor(unsigned int rows, unsigned int cols, bool reserve_memory) {
+TGMatrix::TGMatrix(unsigned int rows, unsigned int cols, bool reserve_memory) {
     this->cols = cols;
     this->rows = rows;
     this->guarded = false;
-    this->gradient = nullptr; // Store the chain rule of gradients with respect to this tensor.
+    this->gradient = nullptr; // Store the chain rule of gradients with respect to this TGMatrix.
     if (!reserve_memory)
         this->data = nullptr;
     else {
@@ -19,11 +15,11 @@ Tensor::Tensor(unsigned int rows, unsigned int cols, bool reserve_memory) {
     }
 }
 
-Tensor::~Tensor(void){
+TGMatrix::~TGMatrix(void){
     this->free_contents();
 }
 
-void Tensor::free_contents(void){
+void TGMatrix::free_contents(void){
     if (this->data != nullptr){
         delete[] this->data;
         this->data = nullptr;
@@ -38,13 +34,13 @@ void Tensor::free_contents(void){
     }
 }
 
-unsigned int Tensor::size(void){
+unsigned int TGMatrix::size(void){
     return this->rows * this->cols;
 }
 
-void Tensor::copy_data_from_other_tensor(Tensor *src){
+void TGMatrix::copy_data_from_other_TGMatrix(TGMatrix *src){
     if (src->cols == this->cols && src->rows == this->rows){
         std::copy(src->data, src->data+this->size(), this->data);
     } else
-        throw std::invalid_argument("[Tensor::copy_data_from_tensor] The tensor dimensions do not match!");
+        throw std::invalid_argument("[TGMatrix::copy_data_from_TGMatrix] The TGMatrix dimensions do not match!");
 }

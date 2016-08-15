@@ -1,7 +1,3 @@
-//
-// Created by niko on 4/21/16.
-//
-
 #ifndef TINYGRAD_NODEIMPLEMENTATIONS_H
 #define TINYGRAD_NODEIMPLEMENTATIONS_H
 
@@ -11,12 +7,12 @@
 
 class NodeMultiplyRightWithMatrix : public Node{
 public:
-    Tensor *mulmat;
+    TGMatrix *mulmat;
     void calculate_value(void);
     void calculate_gradient(void);
-    void update_matrix(Tensor *);
-    void combine_upper_gradient(Tensor *upper_gradient);
-    NodeMultiplyRightWithMatrix(Tensor*);
+    void update_matrix(TGMatrix *);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
+    NodeMultiplyRightWithMatrix(TGMatrix*);
 };
 
 class NodeElementWisePower : public Node{
@@ -25,7 +21,7 @@ private:
 public:
     void calculate_value(void);
     void calculate_gradient(void);
-    void combine_upper_gradient(Tensor *upper_gradient);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
     NodeElementWisePower(double);
 };
 
@@ -33,7 +29,7 @@ class NodeElementWiseSigmoidFunction : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(void);
-    void combine_upper_gradient(Tensor *upper_gradient);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
     NodeElementWiseSigmoidFunction(void);
 };
 
@@ -41,39 +37,39 @@ class NodeElementWiseLog : public Node{
 public:
     void calculate_value(void);
     void calculate_gradient(void);
-    void combine_upper_gradient(Tensor *upper_gradient);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
     NodeElementWiseLog(void);
 };
 
-class NodeAddTensor : public Node{
+class NodeAddTGMatrix : public Node{
 public:
-    Tensor *addition;
+    TGMatrix *addition;
     void calculate_value(void);
     void calculate_gradient(void);
-    void update_matrix(Tensor *);
-    void combine_upper_gradient(Tensor *upper_gradient);
-    NodeAddTensor(Tensor*);
+    void update_matrix(TGMatrix *);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
+    NodeAddTGMatrix(TGMatrix*);
 };
 
 class NodeSquaredError : public Node{
 private:
-    Tensor *target;
+    TGMatrix *target;
 public:
     void calculate_value(void);
     void calculate_gradient(void);
-    void update_target(Tensor*);
-    void combine_upper_gradient(Tensor *upper_gradient);
+    void update_target(TGMatrix*);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
     NodeSquaredError(void);
 };
 
 class NodeBinaryCrossEntropy : public Node{
 private:
-    Tensor *target;
+    TGMatrix *target;
 public:
     void calculate_value(void);
     void calculate_gradient(void);
-    void update_target(Tensor*);
-    void combine_upper_gradient(Tensor *upper_gradient);
+    void update_target(TGMatrix*);
+    void combine_upper_gradient(TGMatrix *upper_gradient);
     NodeBinaryCrossEntropy(void);
 };
 

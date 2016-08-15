@@ -1,7 +1,3 @@
-//
-// Created by niko on 4/26/16.
-//
-
 #ifndef TINYGRAD_DATASET_H
 #define TINYGRAD_DATASET_H
 

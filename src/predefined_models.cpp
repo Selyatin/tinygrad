@@ -1,16 +1,12 @@
-//
-// Created by niko on 4/25/16.
-//
-
-#include "models.h"
+#include "predefined_models.h"
 #include "utils.h"
 
-Tensor* ClassifierLogisticRegression::evaluate(Tensor* input){
+TGMatrix* ClassifierLogisticRegression::evaluate(TGMatrix* input){
     this->g.clean();
     return this->g.forward(input, this->n1, this->n3);
 }
 
-void ClassifierLogisticRegression::sgd(Tensor *input, Tensor *target, double lr){
+void ClassifierLogisticRegression::sgd(TGMatrix *input, TGMatrix *target, double lr){
     this->evaluate(input);
     this->n4->update_target(target);
 
@@ -32,7 +28,7 @@ ClassifierLogisticRegression::ClassifierLogisticRegression(unsigned int data_dim
     }
     this->biases.data[0] = random_double(-2.0, 2.0);
     this->n1 = new NodeMultiplyRightWithMatrix(&this->weights);
-    this->n2 = new NodeAddTensor(&this->biases);
+    this->n2 = new NodeAddTGMatrix(&this->biases);
     this->n3 = new NodeElementWiseSigmoidFunction;
     this->n4 = new NodeBinaryCrossEntropy();
     this->g.add_node(this->n1);
@@ -55,12 +51,12 @@ ClassifierLogisticRegression::~ClassifierLogisticRegression(void){
 /*
  * A reference implementation of an autoencoder with one hidden layer and sigmoid activations.
  */
-Tensor* AutoencoderSigmoidActivationsOneHiddenLayer::evaluate(Tensor* input){
+TGMatrix* AutoencoderSigmoidActivationsOneHiddenLayer::evaluate(TGMatrix* input){
     this->g.clean();
     return this->g.forward(input, this->n1, this->n3);
 }
 
-void AutoencoderSigmoidActivationsOneHiddenLayer::sgd(Tensor *input, Tensor *target, double lr){
+void AutoencoderSigmoidActivationsOneHiddenLayer::sgd(TGMatrix *input, TGMatrix *target, double lr){
     this->evaluate(input);
     this->n4->update_target(target);
     this->g.backward(this->n4, this->n1);
@@ -108,12 +104,12 @@ AutoencoderSigmoidActivationsOneHiddenLayer::~AutoencoderSigmoidActivationsOneHi
  * A reference implementation of a neural network with one hidden layer, sigmoid
  * activations and one sigmoid output (single activation).
  */
-Tensor* ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::evaluate(Tensor* input){
+TGMatrix* ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::evaluate(TGMatrix* input){
     this->g.clean();
     return this->g.forward(input, this->n1, this->n6);
 }
 
-void ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::sgd(Tensor *input, Tensor *target, double lr){
+void ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::sgd(TGMatrix *input, TGMatrix *target, double lr){
     this->evaluate(input);
     this->n7->update_target(target);
     this->g.backward(this->n7, this->n1);
@@ -150,10 +146,10 @@ ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::ClassifierNeuralNetwork
     }
     this->b2.data[0] = random_double(-2.0,2.0);
     this->n1 = new NodeMultiplyRightWithMatrix(&this->w1);
-    this->n2 = new NodeAddTensor(&this->b1);
+    this->n2 = new NodeAddTGMatrix(&this->b1);
     this->n3 = new NodeElementWiseSigmoidFunction();
     this->n4 = new NodeMultiplyRightWithMatrix(&this->w2);
-    this->n5 = new NodeAddTensor(&this->b2);
+    this->n5 = new NodeAddTGMatrix(&this->b2);
     this->n6 = new NodeElementWiseSigmoidFunction;
     this->n7 = new NodeBinaryCrossEntropy();
     this->g.add_node(this->n1);
@@ -186,12 +182,12 @@ ClassifierNeuralNetworkSigmoidActivationsOneHiddenLayer::~ClassifierNeuralNetwor
  * A reference implementation of a neural network with two hidden layers, sigmoid
  * activations and one sigmoid output (single activation).
  */
-Tensor* ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers::evaluate(Tensor* input){
+TGMatrix* ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers::evaluate(TGMatrix* input){
     this->g.clean();
     return this->g.forward(input, this->n1, this->n6);
 }
 
-void ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers::sgd(Tensor *input, Tensor *target, double lr){
+void ClassifierNeuralNetworkSigmoidActivationsTwoHiddenLayers::sgd(TGMatrix *input, TGMatrix *target, double lr){
     this->evaluate(input);
     this->n7->update_target(target);
     this->g.backward(this->n7, this->n1);

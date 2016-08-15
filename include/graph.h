@@ -1,7 +1,3 @@
-//
-// Created by niko on 4/21/16.
-//
-
 #ifndef TINYGRAD_GRAPH_H
 #define TINYGRAD_GRAPH_H
 
@@ -16,7 +12,7 @@ public:
     void connect_to(int a, int b);
     void connect_to(Node *a, Node *b);
     void print_contents(void);
-    Tensor* forward(Tensor *input, Node *a, Node *b);
+    TGMatrix* forward(TGMatrix *input, Node *a, Node *b);
     void backward(Node *a, Node *b);
     void clean(void);
     Graph(void);
