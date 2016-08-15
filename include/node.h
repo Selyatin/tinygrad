@@ -25,6 +25,10 @@ public:
     void free_buffer_gradient_TGMatrix(void);
     void free_output_TGMatrix(void);
     void free_buffer_TGMatrix(void);
+
+    void reserve_output_memory_once(unsigned int rows, unsigned int cols);
+    void reserve_buffer_gradient_memory_once(unsigned int rows, unsigned int cols);
+
     virtual void calculate_value(void);
     virtual void calculate_gradient(void);
     virtual void combine_upper_gradient(TGMatrix *upper_gradient);

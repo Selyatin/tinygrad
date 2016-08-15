@@ -33,11 +33,7 @@ void Graph::clean(void){
     for(int i=0; i<this->nodes.size(); i++){
         Node *c = this->nodes[i];
         c->free_output_TGMatrix();
-        if (c->buffer != nullptr){
-            c->buffer->free_contents();
-            delete c->buffer;
-            c->buffer = nullptr;
-        }
+        c->free_buffer_TGMatrix();
     }
 }
 
@@ -48,13 +44,13 @@ TGMatrix* Graph::forward(TGMatrix *input, Node *a, Node *b){
     Node *n = a;
 
     while(n != nullptr){
-        n->free_buffer_TGMatrix();
-
         if (n == a){
-            n->buffer = new TGMatrix(input->rows, input->cols, true);
+            if (n->buffer == nullptr)
+                n->buffer = new TGMatrix(input->rows, input->cols, true);
             memcpy(n->buffer->data, input->data, sizeof(double)*input->size());
         } else {
-            n->buffer = new TGMatrix(n->in->output->rows, n->in->output->cols, true);
+            if (n->buffer == nullptr)
+                n->buffer = new TGMatrix(n->in->output->rows, n->in->output->cols, true);
             memcpy(n->buffer->data, n->in->output->data, sizeof(double)*(n->in->output->size()));
         }
 

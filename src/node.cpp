@@ -93,6 +93,16 @@ void Node::free_buffer_gradient_TGMatrix(void){
     }
 }
 
+void Node::reserve_output_memory_once(unsigned int rows, unsigned int cols){
+    if (this->output == nullptr)
+        this->output = new TGMatrix(rows, cols, true);
+}
+
+void Node::reserve_buffer_gradient_memory_once(unsigned int rows, unsigned int cols){
+    if (this->buffer->gradient == nullptr)
+        this->buffer->gradient = new TGMatrix(rows, cols, true);
+}
+
 void Node::connect_to(Node *target){
     this->out = target;
     target->in = this;
